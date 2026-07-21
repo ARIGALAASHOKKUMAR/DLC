@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { CHANGE_PASSWORD, commonAPICall, CONTEXT_HEADING, myAxios } from "../utils/utils";
 import { hideLoader, showLoader, login, showMessage } from "../actions";
 import { store } from "../reducers/allReducers";
+import PaymentScreen from "../screens/PaymentScreen";
 
 const ChangePassword = () => {
   const dispatch = useDispatch();
@@ -114,7 +115,7 @@ const ChangePassword = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.card}>
+      {/* <View style={styles.card}>
         <Text style={styles.header}>CHANGE PASSWORD</Text>
 
         <View style={styles.panel}>
@@ -290,7 +291,8 @@ const ChangePassword = () => {
             </Text>
           </View>
         </View>
-      </View>
+      </View> */}
+      <PaymentScreen/>
     </ScrollView>
   );
 };

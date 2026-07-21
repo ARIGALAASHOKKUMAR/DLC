@@ -166,3 +166,4 @@ export const FINDWORKER = "/api/user/digitalLabourChowkRegDetails";
 export const MYJOBSOFWORKER = "/api/user/digitalLabourChowkJobPostings";
 export const GEOTAGGINGPOST = "/api/user/createGeoTagging";
 export const GEOTAGGINGGET = "/api/user/geo-tagging-details";
+export const PAYMENT_API = "/api/open/create-payment";
