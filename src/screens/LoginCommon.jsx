@@ -839,7 +839,6 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
       errors.agreeTerms;
 
     if (!hasErrors && formik.values.agreeTerms) {
-      try {
         setOtpLoading(true);
         const mobileNumber = formik.values.mobileNumber;
 
@@ -862,14 +861,7 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
               return prev - 1;
             });
           }, 1000);
-        } else {
-          throw new Error(getotp?.message || "Failed to send OTP");
-        }
-      } catch (error) {
-        showErrorToast(error?.message || "Failed to send OTP");
-      } finally {
-        setOtpLoading(false);
-      }
+        }     
     }
   };
 
