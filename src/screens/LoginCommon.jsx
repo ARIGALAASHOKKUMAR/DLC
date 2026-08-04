@@ -748,7 +748,6 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
 
   async function handleSubmit(values, { setSubmitting, resetForm }) {
     setLoading(true);
-    try {
       if (!values.otp || values.otp.length !== 6) {
         showErrorToast("Please enter valid 6-digit OTP");
         return;
@@ -765,15 +764,7 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
         setShowOtpModal(false);
         navigation.goBack();
         resetForm();
-      } else {
-        throw new Error(res?.message || "Registration failed");
-      }
-    } catch (error) {
-      showErrorToast(error?.response?.message || "Registration failed");
-    } finally {
-      setLoading(false);
-      setSubmitting(false);
-    }
+      } 
   }
 
   // Handle phone number input
