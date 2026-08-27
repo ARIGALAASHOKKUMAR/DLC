@@ -716,7 +716,7 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
   // Simple validation schema
   const validationSchema = Yup.object().shape({
     fullName: Yup.string().required("Full name is required"),
-    email: Yup.string().email("Invalid email").required("Email is required"),
+    // email: Yup.string().email("Invalid email").required("Email is required"),
     mobileNumber: Yup.string()
       .matches(/^[0-9]{10}$/, "10 digits required")
       .required("Mobile number is required"),
@@ -754,9 +754,10 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
       }
 
       const payload = {
-        ...values,
-        registrationId: `DL-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`,
-      };
+  ...values,
+  email: values.email === "" ? "-" : values.email,
+  registrationId: `DL-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`,
+};
 
       const res = await commonAPICall(EMPLOYEEREG, payload, "post", dispatch);
 
