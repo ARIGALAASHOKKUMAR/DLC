@@ -9,11 +9,11 @@
     "splash": {
       "image": "./assets/new_splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0b5db3"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ashokarigala.digitallabourchowk",
+      "bundleIdentifier": "org.indusaction.dlcap",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -23,7 +23,7 @@
         "foregroundImage": "./assets/labour_log.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.ashokarigala.digitallabourchowk"
+      "package": "org.indusaction.dlcap"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -31,8 +31,6 @@
     "extra": {
       "eas": {
         "projectId": "037d0ffb-1ab3-45ee-ab0e-1bfc13c7749b"
-
-        
       }
     },
     "plugins": [
@@ -42,7 +40,7 @@
         "expo-splash-screen",
         {
           "image": "./assets/new_splash.png",
-          "resizeMode": "contain",
+          "resizeMode": "cover",
           "backgroundColor": "#ffffff"
         }
       ],
