@@ -1945,7 +1945,7 @@ const WorkExperience = ({ userData, onUpdateSuccess }) => {
                   onPress={() => removeExperience(index)}
                 >
                   <Ionicons name="trash-outline" size={18} color="#fff" />
-                  <Text style={styles.deleteBtnText}>Delete / తొలగించు</Text>
+                  <Text style={styles.deleteBtnText}> తొలగించు</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -2924,7 +2924,7 @@ const Education = ({ userData, onUpdateSuccess }) => {
                             color="#fff"
                           />
                           <Text style={styles.deleteBtnText}>
-                            Delete / తొలగించు
+                            తొలగించు
                           </Text>
                         </TouchableOpacity>
                       )}
@@ -2943,7 +2943,7 @@ const Education = ({ userData, onUpdateSuccess }) => {
                         ]}
                       >
                         <Picker
-                         style={styles.input}
+                         style={styles.picker}
                           selectedValue={item.educationLevel}
                           onValueChange={(itemValue) => {
                             formik.setFieldTouched(
