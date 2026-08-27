@@ -514,6 +514,7 @@ const IdentityVerification = ({ userData, onUpdateSuccess }) => {
     }
   }
 
+
   return (
     <FormikProvider value={formik}>
       <View style={styles.sectionCard}>
@@ -606,6 +607,8 @@ const IdentityVerification = ({ userData, onUpdateSuccess }) => {
                 path,
                 "uploadDocument",
                 20971520, // 20MB
+                "all",
+                dispatch
               );
             }}
           >
