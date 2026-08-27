@@ -60,9 +60,9 @@ const Worker = ({
   };
 
   const profile = useMemo(() => {
-    const fullName = workerData?.full_name || "Aditya Kumar";
-    const mobile = workerData?.mobile_number || "8920254311";
-    const email = workerData?.email || "aditya76@gmail.com";
+    const fullName = workerData?.full_name || "";
+    const mobile = workerData?.mobile_number || "";
+    const email = workerData?.email || "";
 
     const location = [
       workerData?.village_name,
@@ -78,7 +78,7 @@ const Worker = ({
         ? `${workerData.skill_experience_years} Years`
         : "5 Years";
 
-    const age = calculateAge(workerData?.date_of_birth) || "40";
+    const age = calculateAge(workerData?.date_of_birth) || "";
 
     return {
       fullName,
@@ -288,12 +288,12 @@ const Worker = ({
                 <Text style={styles.paymentText}>
                   <Text style={styles.boldText}>Payment (చెల్లింపు): </Text>
                   {item.paymentStatus || "Completed"} ( ₹
-                  {item.totalAmount || "42,000/month"})
+                  {item.totalAmount || "-"})
                 </Text>
 
                 <Text style={styles.ratingText}>
                   <Text style={styles.boldText}>Rating (రేటింగ్): </Text>
-                  {item.rating || "4.7"}/5
+                  {item.rating || "-"}/5
                 </Text>
               </View>
             </View>
