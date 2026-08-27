@@ -618,6 +618,7 @@ const IdentityVerification = ({ userData, onUpdateSuccess }) => {
             ]}
           >
             <Picker
+            style={styles.input}
               selectedValue={formik.values.documentType}
               onValueChange={(itemValue) => {
                 formik.setFieldTouched("documentType", true);
@@ -998,6 +999,7 @@ const LocationInformation = ({ userData, onUpdateSuccess }) => {
             ]}
           >
             <Picker
+             style={styles.input}
               selectedValue={formik.values.district}
               onValueChange={(itemValue) => {
                 formik.setFieldTouched("district", true);
@@ -1043,6 +1045,7 @@ const LocationInformation = ({ userData, onUpdateSuccess }) => {
             ]}
           >
             <Picker
+             style={styles.input}
               selectedValue={formik.values.mandal}
               onValueChange={(itemValue) => {
                 formik.setFieldTouched("mandal", true);
@@ -1087,6 +1090,7 @@ const LocationInformation = ({ userData, onUpdateSuccess }) => {
             ]}
           >
             <Picker
+             style={styles.input}
               selectedValue={formik.values.village}
               onValueChange={(itemValue) => {
                 formik.setFieldTouched("village", true);
@@ -1559,6 +1563,7 @@ const SkillDetails = ({ userData, onUpdateSuccess }) => {
             ]}
           >
             <Picker
+             style={styles.input}
               selectedValue={formik.values.workType}
               onValueChange={(itemValue) => {
                 formik.setFieldTouched("workType", true);
@@ -2359,6 +2364,7 @@ const WorkExperience = ({ userData, onUpdateSuccess }) => {
                 ]}
               >
                 <Picker
+                 style={styles.input}
                   selectedValue={item.paymentStatus}
                   onValueChange={(itemValue) => {
                     formik.setFieldTouched(
@@ -2435,6 +2441,7 @@ const WorkExperience = ({ userData, onUpdateSuccess }) => {
                 ]}
               >
                 <Picker
+                 style={styles.input}
                   selectedValue={item.rating}
                   onValueChange={(itemValue) => {
                     formik.setFieldTouched(
@@ -2755,6 +2762,7 @@ const EmployerWorkDetails = ({ userData, onUpdateSuccess }) => {
             ]}
           >
             <Picker
+             style={styles.input}
               selectedValue={formik.values.averageWorkersHiredPerMonth}
               onValueChange={(itemValue) => {
                 formik.setFieldTouched("averageWorkersHiredPerMonth", true);
@@ -2935,6 +2943,7 @@ const Education = ({ userData, onUpdateSuccess }) => {
                         ]}
                       >
                         <Picker
+                         style={styles.input}
                           selectedValue={item.educationLevel}
                           onValueChange={(itemValue) => {
                             formik.setFieldTouched(
@@ -3758,13 +3767,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#333",
   },
-  selectBox: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    backgroundColor: "#fff",
-    overflow: "hidden",
-  },
+  
   photoButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -3995,5 +3998,15 @@ const styles = StyleSheet.create({
     display: "flex",
     flexDirection: "row",
     justifyContent: "space-between",
+  },
+
+  selectBox: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 6,
+    backgroundColor: "#fff",
+  },
+  picker: {
+    color: "#000", // Force black text in all modes
   },
 });
