@@ -115,7 +115,7 @@ const ChangePassword = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* <View style={styles.card}>
+      <View style={styles.card}>
         <Text style={styles.header}>CHANGE PASSWORD</Text>
 
         <View style={styles.panel}>
@@ -291,8 +291,8 @@ const ChangePassword = () => {
             </Text>
           </View>
         </View>
-      </View> */}
-      <PaymentScreen/>
+      </View>
+      {/* <PaymentScreen/> */}
     </ScrollView>
   );
 };
