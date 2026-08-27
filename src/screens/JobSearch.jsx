@@ -484,6 +484,7 @@ const JobSearchScreen = ({ navigation }) => {
                       getmandals(itemValue);
                     }
                   }}
+                  style={styles.picker}
                 >
                   <Picker.Item
                     label="Select District / జిల్లాను ఎంచుకోండి"
@@ -515,6 +516,7 @@ const JobSearchScreen = ({ navigation }) => {
                       getVillages(districtId, itemValue);
                     }
                   }}
+                   style={styles.picker}
                 >
                   <Picker.Item
                     label="Select Mandal / మండలాన్ని ఎంచుకోండి"
@@ -542,6 +544,7 @@ const JobSearchScreen = ({ navigation }) => {
                   onValueChange={(itemValue) => {
                     setVillageId(itemValue);
                   }}
+                   style={styles.input}
                 >
                   <Picker.Item
                     label="Select Village / గ్రామాన్ని ఎంచుకోండి"
@@ -844,6 +847,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#222",
   },
+  picker: {
+    color: "#000", // Force black text in all modes
+  },
+
   skillsSelectBoxNew: {
     flexDirection: "row",
     alignItems: "center",
@@ -1046,5 +1053,8 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 13,
     fontWeight: "700",
+  },
+  picker: {
+    color: "#000", // Force black text in all modes
   },
 });

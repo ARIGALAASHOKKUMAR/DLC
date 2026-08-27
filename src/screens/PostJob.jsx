@@ -511,6 +511,7 @@ const PostJob = ({ route, navigation }) => {
             >
               <Picker
                 selectedValue={formik.values.district}
+                style={styles.picker}
                 onValueChange={(itemValue) => {
                   formik.setFieldTouched("district", true);
                   formik.setFieldValue("district", itemValue);
@@ -564,6 +565,7 @@ const PostJob = ({ route, navigation }) => {
                   }
                 }}
                 enabled={!!formik.values.district}
+                 style={styles.picker}
               >
                 <Picker.Item label="---Select Mandal---" value="" />
                 {mandal.map((item) => (
@@ -599,6 +601,7 @@ const PostJob = ({ route, navigation }) => {
                   formik.setFieldValue("village", itemValue);
                 }}
                 enabled={!!formik.values.mandal}
+                 style={styles.picker}
               >
                 <Picker.Item label="---Select Village---" value="" />
                 {village.map((item) => (
@@ -835,6 +838,7 @@ const PostJob = ({ route, navigation }) => {
                   formik.setFieldTouched("preferredWorkType", true);
                   formik.setFieldValue("preferredWorkType", itemValue);
                 }}
+                 style={styles.picker}
               >
                 <Picker.Item label="---Select Work Type---" value="" />
                 {preferredWorkTypes.map((item) => (
@@ -1073,4 +1077,8 @@ const styles = StyleSheet.create({
   multiChipTextSelected: {
     color: "#fff",
   },
+  picker: {
+    color: "#000", // Force black text in all modes
+  },
+
 });
