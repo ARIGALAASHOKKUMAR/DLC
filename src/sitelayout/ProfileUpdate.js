@@ -618,7 +618,7 @@ const IdentityVerification = ({ userData, onUpdateSuccess }) => {
             ]}
           >
             <Picker
-            style={styles.input}
+            style={styles.picker}
               selectedValue={formik.values.documentType}
               onValueChange={(itemValue) => {
                 formik.setFieldTouched("documentType", true);
@@ -999,7 +999,7 @@ const LocationInformation = ({ userData, onUpdateSuccess }) => {
             ]}
           >
             <Picker
-             style={styles.input}
+             style={styles.picker}
               selectedValue={formik.values.district}
               onValueChange={(itemValue) => {
                 formik.setFieldTouched("district", true);
@@ -1045,7 +1045,7 @@ const LocationInformation = ({ userData, onUpdateSuccess }) => {
             ]}
           >
             <Picker
-             style={styles.input}
+             style={styles.picker}
               selectedValue={formik.values.mandal}
               onValueChange={(itemValue) => {
                 formik.setFieldTouched("mandal", true);
@@ -1090,7 +1090,7 @@ const LocationInformation = ({ userData, onUpdateSuccess }) => {
             ]}
           >
             <Picker
-             style={styles.input}
+             style={styles.picker}
               selectedValue={formik.values.village}
               onValueChange={(itemValue) => {
                 formik.setFieldTouched("village", true);
@@ -1563,7 +1563,7 @@ const SkillDetails = ({ userData, onUpdateSuccess }) => {
             ]}
           >
             <Picker
-             style={styles.input}
+             style={styles.picker}
               selectedValue={formik.values.workType}
               onValueChange={(itemValue) => {
                 formik.setFieldTouched("workType", true);
@@ -2762,7 +2762,7 @@ const EmployerWorkDetails = ({ userData, onUpdateSuccess }) => {
             ]}
           >
             <Picker
-             style={styles.input}
+             style={styles.picker}
               selectedValue={formik.values.averageWorkersHiredPerMonth}
               onValueChange={(itemValue) => {
                 formik.setFieldTouched("averageWorkersHiredPerMonth", true);

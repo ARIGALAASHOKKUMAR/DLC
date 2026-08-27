@@ -544,7 +544,7 @@ const JobSearchScreen = ({ navigation }) => {
                   onValueChange={(itemValue) => {
                     setVillageId(itemValue);
                   }}
-                   style={styles.input}
+                   style={styles.picker}
                 >
                   <Picker.Item
                     label="Select Village / గ్రామాన్ని ఎంచుకోండి"
@@ -828,7 +828,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: "#fff",
     overflow: "hidden",
-    minHeight: 48,
+    // minHeight: 48,
     justifyContent: "center",
   },
   inputWithIcon: {
