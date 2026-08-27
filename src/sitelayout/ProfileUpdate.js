@@ -34,13 +34,14 @@ import { profileMenu } from "../utils/CommonFunctions";
 import ImageBucketRN from "../utils/ImageBucketRN";
 import OldProfileUpdate from "./OldProfileUpdate";
 
-// ==================== Basic Details Component ====================
+
 
 const BasicDetails = ({ userData, onUpdateSuccess }) => {
   const dispatch = useDispatch();
   const state = useSelector((state) => state.LoginReducer);
 
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [pickerDate, setPickerDate] = useState(new Date());
 
   const employerTypes = [
     { id: 1, label: "Individual / వ్యక్తిగత" },
@@ -49,10 +50,112 @@ const BasicDetails = ({ userData, onUpdateSuccess }) => {
     { id: 4, label: "Agency / ఏజెన్సీ" },
   ];
 
+  // Helper function to safely parse date string
+  const parseDateString = (dateStr) => {
+    if (!dateStr) return null;
+    
+    const parts = dateStr.split("-");
+    if (parts.length !== 3) return null;
+    
+    let day, month, year;
+    
+    if (parts[0].length === 4) {
+      [year, month, day] = parts;
+    } else {
+      [day, month, year] = parts;
+    }
+    
+    const yearNum = parseInt(year, 10);
+    const monthNum = parseInt(month, 10) - 1;
+    const dayNum = parseInt(day, 10);
+    
+    if (isNaN(yearNum) || isNaN(monthNum) || isNaN(dayNum)) return null;
+    
+    return new Date(yearNum, monthNum, dayNum);
+  };
+
+  // Create date from string for picker
+  const getDateForPicker = (dateStr) => {
+    if (!dateStr) {
+      return new Date(2000, 0, 1);
+    }
+    
+    const parts = dateStr.split("-");
+    if (parts.length !== 3) return new Date(2000, 0, 1);
+    
+    let day, month, year;
+    if (parts[0].length === 4) {
+      [year, month, day] = parts;
+    } else {
+      [day, month, year] = parts;
+    }
+    
+    const yearNum = parseInt(year, 10);
+    const monthNum = parseInt(month, 10) - 1;
+    const dayNum = parseInt(day, 10);
+    
+    if (isNaN(yearNum) || isNaN(monthNum) || isNaN(dayNum)) {
+      return new Date(2000, 0, 1);
+    }
+    
+    return new Date(yearNum, monthNum, dayNum);
+  };
+
+  // Format date for API (YYYY-MM-DD)
+  const formatDateForAPI = (date) => {
+    if (!date) return "";
+    
+    const parts = date.split("-");
+    if (parts.length !== 3) return date;
+    
+    let day, month, year;
+    
+    if (parts[0].length === 4) {
+      [year, month, day] = parts;
+    } else {
+      [day, month, year] = parts;
+    }
+    
+    day = day.padStart(2, "0");
+    month = month.padStart(2, "0");
+    
+    return `${year}-${month}-${day}`;
+  };
+
+  // Format date for display (DD-MM-YYYY)
+  const formatDateForDisplay = (date) => {
+    if (!date) return "";
+    
+    const parts = date.split(/[-/]/);
+    if (parts.length !== 3) return date;
+    
+    let day, month, year;
+    
+    if (parts[0].length === 4) {
+      [year, month, day] = parts;
+    } else {
+      [day, month, year] = parts;
+    }
+    
+    return `${String(day).padStart(2, "0")}-${String(month).padStart(2, "0")}-${year}`;
+  };
+
+  // Format initial date from API
+  const formatInitialDate = (dateStr) => {
+    if (!dateStr) return "";
+    
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = dateStr.split("-");
+      return `${day}-${month}-${year}`;
+    }
+    return dateStr;
+  };
+
   const validationSchema = Yup.object().shape({
     fullName: Yup.string().required("Required / అవసరం"),
-    mobileNumber: Yup.string().required("Required / అవసరం"),
-    // email: Yup.string().required("Required / అవసరం"),
+    mobileNumber: Yup.string()
+      .required("Required / అవసరం")
+      .matches(/^[0-9]{10}$/, "Invalid mobile number / చెల్లని మొబైల్ నంబర్"),
     dateOfBirth: Yup.string()
       .required("Required / అవసరం")
       .test(
@@ -61,23 +164,24 @@ const BasicDetails = ({ userData, onUpdateSuccess }) => {
         function (value) {
           if (!value) return false;
 
-          const [day, month, year] = value.split("-");
-          const dob = new Date(`${year}-${month}-${day}`);
+          const parsedDate = parseDateString(value);
+          if (!parsedDate) return false;
+
           const today = new Date();
+          const birthDate = new Date(parsedDate);
+          
+          let age = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
 
-          let age = today.getFullYear() - dob.getFullYear();
-          const monthDiff = today.getMonth() - dob.getMonth();
-
-          // adjust age if birthday not yet occurred this year
           if (
             monthDiff < 0 ||
-            (monthDiff === 0 && today.getDate() < dob.getDate())
+            (monthDiff === 0 && today.getDate() < birthDate.getDate())
           ) {
             age--;
           }
 
           return age >= 18;
-        },
+        }
       ),
     gender: Yup.string().required("Required / అవసరం"),
     employerTypeId: Yup.string().when([], {
@@ -87,44 +191,11 @@ const BasicDetails = ({ userData, onUpdateSuccess }) => {
     }),
   });
 
-  const formatDateForPicker = (dateStr) => {
-    if (!dateStr) return "";
-    const parts = dateStr.split("-");
-    if (parts.length === 3) {
-      return `${parts[2]}-${parts[1]}-${parts[0]}`;
-    }
-    return dateStr;
-  };
-
-  const formatDate = (date) => {
-    if (!date) return "";
-
-    const parts = date.split("-");
-    if (parts.length !== 3) return date;
-
-    let day, month, year;
-
-    // detect format
-    if (parts[0].length === 4) {
-      // YYYY-MM-DD
-      [year, month, day] = parts;
-    } else {
-      // DD-MM-YYYY
-      [day, month, year] = parts;
-    }
-
-    // ensure 2-digit day & month
-    day = day.padStart(2, "0");
-    month = month.padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
-  };
-
   const formik = useFormik({
     enableReinitialize: true,
     initialValues: {
       fullName: userData?.full_name || "",
-      dateOfBirth: userData?.date_of_birth,
+      dateOfBirth: userData?.date_of_birth ? formatInitialDate(userData.date_of_birth) : "",
       gender: userData?.gender || "",
       mobileNumber: userData?.mobile_number || "",
       email: userData?.email || "",
@@ -143,7 +214,7 @@ const BasicDetails = ({ userData, onUpdateSuccess }) => {
     try {
       const payload = {
         ...values,
-        dateOfBirth: formatDate(values.dateOfBirth),
+        dateOfBirth: formatDateForAPI(values.dateOfBirth),
         employerTypeId: values.employerTypeId
           ? Number(values.employerTypeId)
           : "",
@@ -157,7 +228,7 @@ const BasicDetails = ({ userData, onUpdateSuccess }) => {
       );
 
       if (response?.status === 200) {
-        onUpdateSuccess?.(); // refresh parent data
+        onUpdateSuccess?.();
       }
     } catch (error) {
       console.log("Error:", error);
@@ -168,23 +239,47 @@ const BasicDetails = ({ userData, onUpdateSuccess }) => {
 
   const showEmployerType = state.roleName === "DLC Employer";
 
-  const reverseDate = (date) => {
-    if (!date) return "";
-
-    const parts = date.split(/[-/]/);
-    if (parts.length !== 3) return date;
-
-    let day, month, year;
-
-    if (parts[0].length === 4) {
-      // YYYY-MM-DD
-      [year, month, day] = parts;
-    } else {
-      // DD-MM-YYYY
-      [day, month, year] = parts;
+  // Handle date selection
+  const handleDateChange = (event, selectedDate) => {
+    // For Android, when user cancels, selectedDate is null
+    if (selectedDate === undefined || selectedDate === null) {
+      setShowDatePicker(false);
+      return;
     }
 
-    return `${String(day).padStart(2, "0")}-${String(month).padStart(2, "0")}-${year}`;
+    setShowDatePicker(false);
+    
+    // Extract date components
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+    const day = String(selectedDate.getDate()).padStart(2, "0");
+    
+    const formatted = `${day}-${month}-${year}`;
+    formik.setFieldValue("dateOfBirth", formatted);
+    formik.setFieldTouched("dateOfBirth", true);
+  };
+
+  // Handle date dismiss
+  const handleDateDismiss = () => {
+    setShowDatePicker(false);
+  };
+
+  // Open date picker
+  const openDatePicker = () => {
+    const date = getDateForPicker(formik.values.dateOfBirth);
+    setPickerDate(date);
+    formik.setFieldTouched("dateOfBirth", true);
+    setShowDatePicker(true);
+  };
+
+  // Create minDate for picker (set to year 1900 to allow dates before 1970)
+  const getMinDate = () => {
+    // Set min date to Jan 1, 1900 (or any year before 1970)
+    // This fixes the Android bug where dates before 1970 are not selectable
+    const minDate = new Date();
+    minDate.setFullYear(1900, 0, 1);
+    minDate.setHours(0, 0, 0, 0);
+    return minDate;
   };
 
   return (
@@ -235,16 +330,14 @@ const BasicDetails = ({ userData, onUpdateSuccess }) => {
                     borderColor: "red",
                   },
               ]}
-              onPress={() => {
-                formik.setFieldTouched("dateOfBirth", true);
-                setShowDatePicker(true);
-              }}
+              onPress={openDatePicker}
             >
-              <Text>
-                {reverseDate(formik.values.dateOfBirth) ||
-                  "Select Date of Birth / పుట్టిన తేదీని ఎంచుకోండి"}
-              </Text>{" "}
-              <Ionicons name="calendar-outline" size={20} />
+              <Text style={formik.values.dateOfBirth ? styles.dateText : styles.placeholderText}>
+                {formik.values.dateOfBirth 
+                  ? formatDateForDisplay(formik.values.dateOfBirth)
+                  : "Select Date of Birth / పుట్టిన తేదీని ఎంచుకోండి"}
+              </Text>
+              <Ionicons name="calendar-outline" size={20} color="#666" />
             </TouchableOpacity>
 
             {formik.errors.dateOfBirth && formik.touched.dateOfBirth && (
@@ -253,29 +346,15 @@ const BasicDetails = ({ userData, onUpdateSuccess }) => {
 
             {showDatePicker && (
               <DateTimePicker
-                value={
-                  formik.values.dateOfBirth
-                    ? new Date(formatDateForPicker(formik.values.dateOfBirth))
-                    : new Date()
-                }
+                testID="dateTimePicker"
+                value={pickerDate}
                 mode="date"
                 display="default"
                 maximumDate={new Date()}
-                onChange={(event, selectedDate) => {
-                  setShowDatePicker(false);
-
-                  if (selectedDate) {
-                    const day = String(selectedDate.getDate()).padStart(2, "0");
-                    const month = String(selectedDate.getMonth() + 1).padStart(
-                      2,
-                      "0",
-                    );
-                    const year = selectedDate.getFullYear();
-
-                    const formatted = `${day}-${month}-${year}`;
-                    formik.setFieldValue("dateOfBirth", formatted);
-                  }
-                }}
+                minimumDate={getMinDate()} // CRITICAL: This fixes the 1970 issue
+                onChange={handleDateChange}
+                onDismiss={handleDateDismiss}
+                neutralButtonLabel="Cancel"
               />
             )}
           </View>
@@ -302,13 +381,14 @@ const BasicDetails = ({ userData, onUpdateSuccess }) => {
                         : "radio-button-off"
                     }
                     size={22}
+                    color={formik.values.gender === g ? "#007AFF" : "#666"}
                   />
-                  <Text>
+                  <Text style={styles.radioLabel}>
                     {g === "MALE"
                       ? "MALE / పురుషుడు"
                       : g === "FEMALE"
-                        ? "FEMALE / స్త్రీ"
-                        : "OTHER / ఇతర"}
+                      ? "FEMALE / స్త్రీ"
+                      : "OTHER / ఇతర"}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -345,7 +425,7 @@ const BasicDetails = ({ userData, onUpdateSuccess }) => {
 
           <View style={styles.inputBlock}>
             <Text style={styles.label}>
-              Email / ఇమెయిల్ <Text style={styles.requiredStar}></Text>
+              Email / ఇమెయిల్
             </Text>
             <TextInput
               style={[
@@ -359,6 +439,7 @@ const BasicDetails = ({ userData, onUpdateSuccess }) => {
               onBlur={formik.handleBlur("email")}
               placeholder="Enter email / ఇమెయిల్ నమోదు చేయండి"
               keyboardType="email-address"
+              autoCapitalize="none"
             />
             {formik.errors.email && formik.touched.email && (
               <Text style={styles.errorText}>{formik.errors.email}</Text>
@@ -385,6 +466,7 @@ const BasicDetails = ({ userData, onUpdateSuccess }) => {
                     formik.setFieldTouched("employerTypeId", true);
                     formik.setFieldValue("employerTypeId", String(itemValue));
                   }}
+                  style={styles.picker}
                 >
                   <Picker.Item
                     label="Select Employer Type / యజమాని రకాన్ని ఎంచుకోండి"
@@ -409,7 +491,7 @@ const BasicDetails = ({ userData, onUpdateSuccess }) => {
           )}
 
           <TouchableOpacity
-            style={styles.submitButton}
+            style={[styles.submitButton, formik.isSubmitting && styles.disabledButton]}
             onPress={formik.handleSubmit}
             disabled={formik.isSubmitting}
           >
@@ -585,126 +667,97 @@ const IdentityVerification = ({ userData, onUpdateSuccess }) => {
           )}
         </View>
 
-        <View style={styles.inputBlock}>
-          <Text style={styles.label}>
-            Upload Document / డాక్యుమెంట్ అప్లోడ్ చేయండి{" "}
-            <Text style={styles.requiredStar}>*</Text>
-          </Text>
-          <TouchableOpacity
-            style={[
-              styles.uploadButton,
-              formik.errors.uploadDocument &&
-                formik.touched.uploadDocument &&
-                styles.inputError,
-            ]}
-            onPress={() => {
-              formik.setFieldTouched("uploadDocument", true);
+       <View style={styles.inputBlock}>
+  <Text style={styles.label}>
+    Upload Certificate / సర్టిఫికేట్ అప్లోడ్ చేయండి{" "}
+    {/* <Text style={styles.requiredStar}>*</Text> */}
+  </Text>
+  <TouchableOpacity
+    style={[
+      styles.uploadButton,
+      formik.errors.uploadDocument && 
+      formik.touched.uploadDocument && 
+      styles.inputError,
+    ]}
+    onPress={async () => {
+      formik.setFieldTouched("uploadDocument", true);
 
-              let path = "APFD/SAWMILLS/";
+      // Use the same bucket upload approach
+      let path = "APFD/SAWMILLS/CERTIFICATES/";
 
-              ImageBucketRN(
-                formik,
-                path,
-                "uploadDocument",
-                20971520, // 20MB
-                "all",
-                dispatch
-              );
-            }}
-          >
-            <Text style={styles.uploadButtonText}>
-              Upload Document / డాక్యుమెంట్ అప్లోడ్ చేయండి
-            </Text>
-          </TouchableOpacity>
-          <View style={{ alignItems: "center" }}>
-            {formik.values.uploadDocument
-              ? (() => {
-                  const fileUrl = formik.values.uploadDocument;
+      ImageBucketRN(
+        formik,
+        path,
+        "uploadDocument", // Simple field name, not array path
+        20971520, // 20MB
+        "all",
+        dispatch
+      );
+    }}
+  >
+    <Text style={styles.uploadButtonText}>
+      Upload Certificate / సర్టిఫికేట్ అప్లోడ్ చేయండి
+    </Text>
+  </TouchableOpacity>
 
-                  const isImage = /\.(jpg|jpeg|png)$/i.test(fileUrl);
-                  const isPdf = /\.pdf$/i.test(fileUrl);
+  {/* File Preview */}
+  <View style={{ alignItems: "center" }}>
+    {formik.values.uploadDocument ? (
+      (() => {
+        const fileUrl = formik.values.uploadDocument;
+        const isImage = /\.(jpg|jpeg|png)$/i.test(fileUrl);
+        const isPdf = /\.pdf$/i.test(fileUrl);
 
-                  // ✅ IMAGE PREVIEW
-                  if (isImage) {
-                    return (
-                      <View style={{ marginTop: 10 }}>
-                        <Image
-                          source={{ uri: fileUrl }}
-                          style={{
-                            width: 120,
-                            height: 120,
-                            borderRadius: 8,
-                            resizeMode: "cover",
-                          }}
-                        />
-                      </View>
-                    );
-                  }
-
-                  // ✅ PDF DOWNLOAD ICON
-                  if (isPdf) {
-                    return (
-                      <TouchableOpacity
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          marginTop: 10,
-                        }}
-                        onPress={() => Linking.openURL(fileUrl)}
-                      >
-                        <Ionicons
-                          name="document-text-outline"
-                          size={24}
-                          color="red"
-                        />
-                        <Text style={{ marginLeft: 8, color: "blue" }}>
-                          Download PDF
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  }
-
-                  // ✅ DEFAULT (other files)
-                  return <Text style={styles.fileNameText}>{fileUrl}</Text>;
-                })()
-              : null}
-          </View>
-
-          {formik.values.image_location && (
-            <View
-              style={{
-                marginTop: 10,
-                padding: 10,
-                backgroundColor: "#f5f5f5",
-                borderRadius: 8,
-                width: "90%",
-              }}
-            >
-              {/* Location Icon + Title */}
-              <Text style={{ fontWeight: "bold", marginBottom: 5 }}>
-                📍 Location Details
-              </Text>
-
-              {/* Address */}
-              <Text style={{ fontSize: 13 }}>
-                {formik.values.image_location.street},{"\n"}
-                {formik.values.image_location.city},{"\n"}
-                {formik.values.image_location.state} -{" "}
-                {formik.values.image_location.pincode}
-              </Text>
-
-              {/* Lat Long (small & subtle) */}
-              <Text style={{ fontSize: 11, color: "gray", marginTop: 5 }}>
-                Lat: {formik.values.image_location.lat} | Lng:{" "}
-                {formik.values.image_location.lng}
-              </Text>
+        // ✅ IMAGE PREVIEW
+        if (isImage) {
+          return (
+            <View style={{ marginTop: 10 }}>
+              <Image
+                source={{ uri: fileUrl }}
+                style={{
+                  width: 120,
+                  height: 120,
+                  borderRadius: 8,
+                  resizeMode: "cover",
+                }}
+              />
             </View>
-          )}
+          );
+        }
 
-          {formik.errors.uploadDocument && formik.touched.uploadDocument && (
-            <Text style={styles.errorText}>{formik.errors.uploadDocument}</Text>
-          )}
-        </View>
+        // ✅ PDF DOWNLOAD ICON
+        if (isPdf) {
+          return (
+            <TouchableOpacity
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginTop: 10,
+              }}
+              onPress={() => Linking.openURL(fileUrl)}
+            >
+              <Ionicons
+                name="document-text-outline"
+                size={24}
+                color="red"
+              />
+              <Text style={{ marginLeft: 8, color: "blue" }}>
+                Download PDF
+              </Text>
+            </TouchableOpacity>
+          );
+        }
+
+        // ✅ DEFAULT (other files)
+        return <Text style={styles.fileNameText}>{fileUrl}</Text>;
+      })()
+    ) : null}
+  </View>
+
+  {formik.errors.uploadDocument && formik.touched.uploadDocument && (
+    <Text style={styles.errorText}>{formik.errors.uploadDocument}</Text>
+  )}
+</View>
 
         <View style={styles.inputBlock}>
           <Text style={styles.label}>
@@ -2983,57 +3036,112 @@ const Education = ({ userData, onUpdateSuccess }) => {
                       ) : null}
                     </View>
 
-                    <View style={styles.inputBlock}>
-                      <Text style={styles.label}>
-                        Upload Certificate / సర్టిఫికేట్ అప్లోడ్ చేయండి{" "}
-                        {/* <Text style={styles.requiredStar}>*</Text> */}
-                      </Text>
-                      <TouchableOpacity
-                        style={[
-                          styles.uploadButton,
-                          getError(index, "uploadCertificate") &&
-                            styles.inputError,
-                        ]}
-                        onPress={async () => {
-                          formik.setFieldTouched(
-                            `workerEducationList[${index}].uploadCertificate`,
-                            true,
-                          );
+                   <View style={styles.inputBlock}>
+  <Text style={styles.label}>
+    Upload Certificate / సర్టిఫికేట్ అప్లోడ్ చేయండి{" "}
+    {/* <Text style={styles.requiredStar}>*</Text> */}
+  </Text>
+  <TouchableOpacity
+    style={[
+      styles.uploadButton,
+      getError(index, "uploadCertificate") &&
+        styles.inputError,
+    ]}
+    onPress={async () => {
+      formik.setFieldTouched(
+        `workerEducationList[${index}].uploadCertificate`,
+        true,
+      );
 
-                          // replace with actual picker
-                          Alert.alert(
-                            "Upload Certificate / సర్టిఫికేట్ అప్లోడ్ చేయండి",
-                            `Upload certificate for row ${index + 1} / వరుస ${index + 1} కోసం సర్టిఫికేట్ అప్లోడ్ చేయండి`,
-                          );
+      // Use ImageBucketRN for actual upload
+      let path = "APFD/SAWMILLS/CERTIFICATES/";
+      
+      ImageBucketRN(
+        formik,
+        path,
+        `workerEducationList[${index}].uploadCertificate`,
+        20971520, // 20MB
+        "all",
+        dispatch
+      );
+    }}
+  >
+    <Text style={styles.uploadButtonText}>
+      Upload Certificate / సర్టిఫికేట్ అప్లోడ్ చేయండి
+    </Text>
+  </TouchableOpacity>
 
-                          formik.setFieldValue(
-                            `workerEducationList[${index}].uploadCertificate`,
-                            "certificate-uploaded",
-                          );
-                        }}
-                      >
-                        <Text style={styles.uploadButtonText}>
-                          Upload Certificate / సర్టిఫికేట్ అప్లోడ్ చేయండి
-                        </Text>
-                      </TouchableOpacity>
+  {/* File Preview */}
+  <View style={{ alignItems: "center" }}>
+    {item.uploadCertificate ? (
+      (() => {
+        const fileUrl = item.uploadCertificate;
+        const isImage = /\.(jpg|jpeg|png)$/i.test(fileUrl);
+        const isPdf = /\.pdf$/i.test(fileUrl);
 
-                      {item.uploadCertificate ? (
-                        <Text style={styles.fileNameText}>
-                          {item.uploadCertificate === "certificate-uploaded"
-                            ? "Certificate selected / సర్టిఫికేట్ ఎంచుకోబడింది"
-                            : "Certificate available / సర్టిఫికేట్ అందుబాటులో ఉంది"}
-                        </Text>
-                      ) : null}
+        // ✅ IMAGE PREVIEW
+        if (isImage) {
+          return (
+            <View style={{ marginTop: 10 }}>
+              <Image
+                source={{ uri: fileUrl }}
+                style={{
+                  width: 120,
+                  height: 120,
+                  borderRadius: 8,
+                  resizeMode: "cover",
+                }}
+              />
+            </View>
+          );
+        }
 
-                      {getError(index, "uploadCertificate") ? (
-                        <Text style={styles.errorText}>
-                          {
-                            formik.errors.workerEducationList[index]
-                              .uploadCertificate
-                          }
-                        </Text>
-                      ) : null}
-                    </View>
+        // ✅ PDF DOWNLOAD ICON
+        if (isPdf) {
+          return (
+            <TouchableOpacity
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginTop: 10,
+              }}
+              onPress={() => Linking.openURL(fileUrl)}
+            >
+              <Ionicons
+                name="document-text-outline"
+                size={24}
+                color="red"
+              />
+              <Text style={{ marginLeft: 8, color: "blue" }}>
+                Download PDF
+              </Text>
+            </TouchableOpacity>
+          );
+        }
+
+        // ✅ DEFAULT (other files or placeholder text)
+        if (fileUrl === "certificate-uploaded") {
+          return (
+            <Text style={[styles.fileNameText, { marginTop: 5 }]}>
+              Certificate selected / సర్టిఫికేట్ ఎంచుకోబడింది
+            </Text>
+          );
+        }
+
+        return <Text style={styles.fileNameText}>{fileUrl}</Text>;
+      })()
+    ) : null}
+  </View>
+
+  {getError(index, "uploadCertificate") ? (
+    <Text style={styles.errorText}>
+      {
+        formik.errors.workerEducationList[index]
+          .uploadCertificate
+      }
+    </Text>
+  ) : null}
+</View>
                   </View>
                 ))}
 
