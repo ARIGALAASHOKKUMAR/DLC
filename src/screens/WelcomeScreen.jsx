@@ -68,7 +68,7 @@ const WelcomeScreen = ({ navigation }) => {
     };
   }, [navigation]);
 
-  // Handle manual navigation
+  // Handle manual navigation test
   const handleGetStarted = () => {
     // Clear the auto-navigation timer if user clicks manually
     if (timerRef.current) {
