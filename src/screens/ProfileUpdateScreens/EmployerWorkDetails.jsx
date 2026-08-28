@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { useDispatch,useSelector } from "react-redux";
-import { BASICPROFILE, commonAPICall } from "../../utils/utils";
+import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { BASICPROFILE, commonAPICall, GETSKILLS } from "../../utils/utils";
 
 import DateTimePicker from "@react-native-community/datetimepicker";
 import {
@@ -9,6 +9,7 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  Modal, // Add Modal import
 } from "react-native";
 import { FieldArray, FormikProvider, useFormik } from "formik";
 import * as Location from "expo-location";
@@ -17,7 +18,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import { styles } from "./styles";
 
-
 export const EmployerWorkDetails = ({ userData, onUpdateSuccess }) => {
   const state = useSelector((state) => state.LoginReducer);
   const dispatch = useDispatch();
@@ -25,7 +25,7 @@ export const EmployerWorkDetails = ({ userData, onUpdateSuccess }) => {
   const [skillsList, setSkillsList] = useState([]);
   const [showSkillsDropdown, setShowSkillsDropdown] = useState(false);
 
-  console.log("userDatauserData", userData.average_workers_hired_per_month);
+  console.log("userDatauserData", userData?.average_workers_hired_per_month);
 
   const averageWorkersOptions = [
     { label: "1-10", value: 10 },
@@ -123,7 +123,6 @@ export const EmployerWorkDetails = ({ userData, onUpdateSuccess }) => {
           ...state,
           isProfileUpdated: "Y",
         };
-        // dispatch(login(updatedPayload));
         resetForm();
         onUpdateSuccess?.();
         setShowSkillsDropdown(false);
@@ -206,46 +205,67 @@ export const EmployerWorkDetails = ({ userData, onUpdateSuccess }) => {
             />
           </TouchableOpacity>
 
-          {showSkillsDropdown && (
-            <View style={[styles.dropdownBox, styles.skillsDropdownBoxNew]}>
-              {skillsList.map((item, index) => {
-                const selected = normalizeCategoryIds(
-                  formik.values.workCategoryIds,
-                ).includes(Number(item.id));
+          {/* Fix 1: Use absolute positioning for dropdown */}
+          <View style={{ position: 'relative' }}>
+            {showSkillsDropdown && (
+              <View style={[
+                styles.dropdownBox, 
+                styles.skillsDropdownBoxNew,
+                {
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  zIndex: 9999, // High z-index
+                  elevation: 9999, // For Android
+                  backgroundColor: '#fff',
+                  borderWidth: 1,
+                  borderColor: '#ccc',
+                  borderRadius: 8,
+                  maxHeight: 200,
+                }
+              ]}>
+                <ScrollView>
+                  {skillsList.map((item, index) => {
+                    const selected = normalizeCategoryIds(
+                      formik.values.workCategoryIds,
+                    ).includes(Number(item.id));
 
-                return (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={[
-                      styles.skillItem,
-                      styles.skillsDropdownItemNew,
-                      selected && styles.skillsDropdownItemSelectedNew,
-                      index === skillsList.length - 1 &&
-                        styles.skillsDropdownLastItemNew,
-                    ]}
-                    onPress={() => toggleSkill(item.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.skillText,
-                        styles.skillsDropdownTextNew,
-                        selected && styles.skillsDropdownTextSelectedNew,
-                      ]}
-                    >
-                      {item.skill_name}
-                    </Text>
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={[
+                          styles.skillItem,
+                          styles.skillsDropdownItemNew,
+                          selected && styles.skillsDropdownItemSelectedNew,
+                          index === skillsList.length - 1 &&
+                            styles.skillsDropdownLastItemNew,
+                        ]}
+                        onPress={() => toggleSkill(item.id)}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.skillText,
+                            styles.skillsDropdownTextNew,
+                            selected && styles.skillsDropdownTextSelectedNew,
+                          ]}
+                        >
+                          {item.skill_name}
+                        </Text>
 
-                    <Ionicons
-                      name={selected ? "checkbox" : "square-outline"}
-                      size={22}
-                      color={selected ? "#1e3a5f" : "#999"}
-                    />
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
+                        <Ionicons
+                          name={selected ? "checkbox" : "square-outline"}
+                          size={22}
+                          color={selected ? "#1e3a5f" : "#999"}
+                        />
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
+          </View>
 
           {formik.touched.workCategoryIds && formik.errors.workCategoryIds ? (
             <Text style={styles.errorText}>
@@ -269,7 +289,7 @@ export const EmployerWorkDetails = ({ userData, onUpdateSuccess }) => {
             ]}
           >
             <Picker
-             style={styles.picker}
+              style={styles.picker}
               selectedValue={formik.values.averageWorkersHiredPerMonth}
               onValueChange={(itemValue) => {
                 formik.setFieldTouched("averageWorkersHiredPerMonth", true);
