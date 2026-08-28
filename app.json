@@ -7,7 +7,7 @@
     "icon": "./assets/labour_log.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/new_splash.png",
+      "image": "./assets/labour_log.png",
       "resizeMode": "contain",
       "backgroundColor": "#0b5db3"
     },
