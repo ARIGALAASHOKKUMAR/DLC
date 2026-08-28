@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  Linking,
 } from "react-native";
 import { FieldArray, FormikProvider, useFormik } from "formik";
 import * as Location from "expo-location";
@@ -51,16 +52,28 @@ export const Education = ({ userData, onUpdateSuccess }) => {
   };
 
   const validationSchema = Yup.object().shape({
-    // workerEducationList: Yup.array()
-    //   .of(
-    //     Yup.object().shape({
-    //       educationLevel: Yup.string().required("Required / అవసరం"),
-    //       institutionName: Yup.string().required("Required / అవసరం"),
-    //       passingYear: Yup.string().required("Required / అవసరం"),
-    //       // uploadCertificate: Yup.string().required("Required"),
-    //     }),
-    //   )
-    //   .min(1, "Required / అవసరం"),
+    workerEducationList: Yup.array()
+      .of(
+        Yup.object().shape({
+          educationLevel: Yup.string().required("Required / అవసరం"),
+          institutionName: Yup.string().when('educationLevel', {
+            is: (val) => val && val !== 'uneducated',
+            then: () => Yup.string().required("Required / అవసరం"),
+            otherwise: () => Yup.string().notRequired()
+          }),
+          passingYear: Yup.string().when('educationLevel', {
+            is: (val) => val && val !== 'uneducated',
+            then: () => Yup.string().required("Required / అవసరం"),
+            otherwise: () => Yup.string().notRequired()
+          }),
+          // uploadCertificate: Yup.string().when('educationLevel', {
+          //   is: (val) => val && val !== 'uneducated',
+          //   then: () => Yup.string().required("Required / అవసరం"),
+          //   otherwise: () => Yup.string().notRequired()
+          // }),
+        }),
+      )
+      .min(1, "Required / అవసరం"),
   });
 
   // Initialize with parsed education data
@@ -119,7 +132,10 @@ export const Education = ({ userData, onUpdateSuccess }) => {
             name="workerEducationList"
             render={(arrayHelpers) => (
               <>
-                {formik.values.workerEducationList.map((item, index) => (
+                {formik.values.workerEducationList.map((item, index) => {
+                  const isUneducated = item.educationLevel === 'uneducated';
+                  
+                  return (
                   <View key={index} style={styles.educationCard}>
                     <View style={styles.rowBetween}>
                       <Text style={styles.subTitle}>
@@ -145,7 +161,7 @@ export const Education = ({ userData, onUpdateSuccess }) => {
                     <View style={styles.inputBlock}>
                       <Text style={styles.label}>
                         Education Level / విద్యా స్థాయి{" "}
-                        {/* <Text style={styles.requiredStar}>*</Text> */}
+                        <Text style={styles.requiredStar}>*</Text>
                       </Text>
                       <View
                         style={[
@@ -166,15 +182,40 @@ export const Education = ({ userData, onUpdateSuccess }) => {
                               `workerEducationList[${index}].educationLevel`,
                               itemValue,
                             );
+                            // Clear other fields if uneducated is selected
+                            if (itemValue === 'uneducated') {
+                              formik.setFieldValue(
+                                `workerEducationList[${index}].institutionName`,
+                                '',
+                              );
+                              formik.setFieldValue(
+                                `workerEducationList[${index}].passingYear`,
+                                '',
+                              );
+                              formik.setFieldValue(
+                                `workerEducationList[${index}].uploadCertificate`,
+                                '',
+                              );
+                            }
                           }}
                         >
                           <Picker.Item
                             label="Select Education Level / విద్యా స్థాయిని ఎంచుకోండి"
                             value=""
                           />
-                          <Picker.Item label="8th / 8వ తరగతి" value="8th" />
-                          <Picker.Item label="10th / 10వ తరగతి" value="10th" />
-                          <Picker.Item label="12th / 12వ తరగతి" value="12th" />
+                          <Picker.Item label="Uneducated / చదువు లేని" value="uneducated" />
+                          <Picker.Item label="1st Class / 1వ తరగతి" value="1st" />
+                          <Picker.Item label="2nd Class / 2వ తరగతి" value="2nd" />
+                          <Picker.Item label="3rd Class / 3వ తరగతి" value="3rd" />
+                          <Picker.Item label="4th Class / 4వ తరగతి" value="4th" />
+                          <Picker.Item label="5th Class / 5వ తరగతి" value="5th" />
+                          <Picker.Item label="6th Class / 6వ తరగతి" value="6th" />
+                          <Picker.Item label="7th Class / 7వ తరగతి" value="7th" />
+                          <Picker.Item label="8th Class / 8వ తరగతి" value="8th" />
+                          <Picker.Item label="9th Class / 9వ తరగతి" value="9th" />
+                          <Picker.Item label="10th Class / 10వ తరగతి" value="10th" />
+                          <Picker.Item label="11th Class / 11వ తరగతి" value="11th" />
+                          <Picker.Item label="12th Class / 12వ తరగతి" value="12th" />
                           <Picker.Item
                             label="Graduation / డిగ్రీ"
                             value="graduation"
@@ -199,172 +240,184 @@ export const Education = ({ userData, onUpdateSuccess }) => {
                       ) : null}
                     </View>
 
-                    <View style={styles.inputBlock}>
-                      <Text style={styles.label}>
-                        Institute / School / College / సంస్థ / పాఠశాల / కళాశాల{" "}
-                        {/* <Text style={styles.requiredStar}>*</Text> */}
-                      </Text>
-                      <TextInput
-                        style={[
-                          styles.input,
-                          getError(index, "institutionName") &&
-                            styles.inputError,
-                        ]}
-                        value={item.institutionName}
-                        onChangeText={formik.handleChange(
-                          `workerEducationList[${index}].institutionName`,
-                        )}
-                        onBlur={formik.handleBlur(
-                          `workerEducationList[${index}].institutionName`,
-                        )}
-                        placeholder="Enter Institute / School / College Name / సంస్థ / పాఠశాల / కళాశాల పేరు నమోదు చేయండి"
-                      />
-                      {getError(index, "institutionName") ? (
-                        <Text style={styles.errorText}>
-                          {
-                            formik.errors.workerEducationList[index]
-                              .institutionName
-                          }
+                    {!isUneducated && (
+                      <>
+                        <View style={styles.inputBlock}>
+                          <Text style={styles.label}>
+                            Institute / School / College / సంస్థ / పాఠశాల / కళాశాల{" "}
+                            <Text style={styles.requiredStar}>*</Text>
+                          </Text>
+                          <TextInput
+                            style={[
+                              styles.input,
+                              getError(index, "institutionName") &&
+                                styles.inputError,
+                            ]}
+                            value={item.institutionName}
+                            onChangeText={formik.handleChange(
+                              `workerEducationList[${index}].institutionName`,
+                            )}
+                            onBlur={formik.handleBlur(
+                              `workerEducationList[${index}].institutionName`,
+                            )}
+                            placeholder="Enter Institute / School / College Name / సంస్థ / పాఠశాల / కళాశాల పేరు నమోదు చేయండి"
+                          />
+                          {getError(index, "institutionName") ? (
+                            <Text style={styles.errorText}>
+                              {
+                                formik.errors.workerEducationList[index]
+                                  .institutionName
+                              }
+                            </Text>
+                          ) : null}
+                        </View>
+
+                        <View style={styles.inputBlock}>
+                          <Text style={styles.label}>
+                            Passing Year / ఉత్తీర్ణత సంవత్సరం{" "}
+                            <Text style={styles.requiredStar}>*</Text>
+                          </Text>
+                          <TextInput
+                            style={[
+                              styles.input,
+                              getError(index, "passingYear") && styles.inputError,
+                            ]}
+                            value={item.passingYear}
+                            onChangeText={formik.handleChange(
+                              `workerEducationList[${index}].passingYear`,
+                            )}
+                            onBlur={formik.handleBlur(
+                              `workerEducationList[${index}].passingYear`,
+                            )}
+                            placeholder="Enter Passing Year / ఉత్తీర్ణత సంవత్సరం నమోదు చేయండి"
+                            keyboardType="numeric"
+                            maxLength={4}
+                          />
+                          {getError(index, "passingYear") ? (
+                            <Text style={styles.errorText}>
+                              {formik.errors.workerEducationList[index].passingYear}
+                            </Text>
+                          ) : null}
+                        </View>
+
+                        <View style={styles.inputBlock}>
+                          <Text style={styles.label}>
+                            Upload Certificate / సర్టిఫికేట్ అప్లోడ్ చేయండి{" "}
+                            {/* <Text style={styles.requiredStar}>*</Text> */}
+                          </Text>
+                          <TouchableOpacity
+                            style={[
+                              styles.uploadButton,
+                              getError(index, "uploadCertificate") &&
+                                styles.inputError,
+                            ]}
+                            onPress={async () => {
+                              formik.setFieldTouched(
+                                `workerEducationList[${index}].uploadCertificate`,
+                                true,
+                              );
+
+                              // Use ImageBucketRN for actual upload
+                              let path = "APFD/SAWMILLS/CERTIFICATES/";
+                              
+                              ImageBucketRN(
+                                formik,
+                                path,
+                                `workerEducationList[${index}].uploadCertificate`,
+                                20971520, // 20MB
+                                "all",
+                                dispatch
+                              );
+                            }}
+                          >
+                            <Text style={styles.uploadButtonText}>
+                              Upload Certificate / సర్టిఫికేట్ అప్లోడ్ చేయండి
+                            </Text>
+                          </TouchableOpacity>
+
+                          {/* File Preview */}
+                          <View style={{ alignItems: "center" }}>
+                            {item.uploadCertificate ? (
+                              (() => {
+                                const fileUrl = item.uploadCertificate;
+                                const isImage = /\.(jpg|jpeg|png)$/i.test(fileUrl);
+                                const isPdf = /\.pdf$/i.test(fileUrl);
+
+                                // ✅ IMAGE PREVIEW
+                                if (isImage) {
+                                  return (
+                                    <View style={{ marginTop: 10 }}>
+                                      <Image
+                                        source={{ uri: fileUrl }}
+                                        style={{
+                                          width: 120,
+                                          height: 120,
+                                          borderRadius: 8,
+                                          resizeMode: "cover",
+                                        }}
+                                      />
+                                    </View>
+                                  );
+                                }
+
+                                // ✅ PDF DOWNLOAD ICON
+                                if (isPdf) {
+                                  return (
+                                    <TouchableOpacity
+                                      style={{
+                                        flexDirection: "row",
+                                        alignItems: "center",
+                                        marginTop: 10,
+                                      }}
+                                      onPress={() => Linking.openURL(fileUrl)}
+                                    >
+                                      <Ionicons
+                                        name="document-text-outline"
+                                        size={24}
+                                        color="red"
+                                      />
+                                      <Text style={{ marginLeft: 8, color: "blue" }}>
+                                        Download PDF
+                                      </Text>
+                                    </TouchableOpacity>
+                                  );
+                                }
+
+                                // ✅ DEFAULT (other files or placeholder text)
+                                if (fileUrl === "certificate-uploaded") {
+                                  return (
+                                    <Text style={[styles.fileNameText, { marginTop: 5 }]}>
+                                      Certificate selected / సర్టిఫికేట్ ఎంచుకోబడింది
+                                    </Text>
+                                  );
+                                }
+
+                                return <Text style={styles.fileNameText}>{fileUrl}</Text>;
+                              })()
+                            ) : null}
+                          </View>
+
+                          {getError(index, "uploadCertificate") ? (
+                            <Text style={styles.errorText}>
+                              {
+                                formik.errors.workerEducationList[index]
+                                  .uploadCertificate
+                              }
+                            </Text>
+                          ) : null}
+                        </View>
+                      </>
+                    )}
+
+                    {isUneducated && (
+                      <View style={styles.inputBlock}>
+                        <Text style={[styles.label, { color: '#666' }]}>
+                          No further details required for uneducated / చదువు లేని వారికి ఎటువంటి వివరాలు అవసరం లేదు
                         </Text>
-                      ) : null}
-                    </View>
-
-                    <View style={styles.inputBlock}>
-                      <Text style={styles.label}>
-                        Passing Year / ఉత్తీర్ణత సంవత్సరం{" "}
-                        {/* <Text style={styles.requiredStar}>*</Text> */}
-                      </Text>
-                      <TextInput
-                        style={[
-                          styles.input,
-                          getError(index, "passingYear") && styles.inputError,
-                        ]}
-                        value={item.passingYear}
-                        onChangeText={formik.handleChange(
-                          `workerEducationList[${index}].passingYear`,
-                        )}
-                        onBlur={formik.handleBlur(
-                          `workerEducationList[${index}].passingYear`,
-                        )}
-                        placeholder="Enter Passing Year / ఉత్తీర్ణత సంవత్సరం నమోదు చేయండి"
-                        keyboardType="numeric"
-                        maxLength={4}
-                      />
-                      {getError(index, "passingYear") ? (
-                        <Text style={styles.errorText}>
-                          {formik.errors.workerEducationList[index].passingYear}
-                        </Text>
-                      ) : null}
-                    </View>
-
-                   <View style={styles.inputBlock}>
-  <Text style={styles.label}>
-    Upload Certificate / సర్టిఫికేట్ అప్లోడ్ చేయండి{" "}
-    {/* <Text style={styles.requiredStar}>*</Text> */}
-  </Text>
-  <TouchableOpacity
-    style={[
-      styles.uploadButton,
-      getError(index, "uploadCertificate") &&
-        styles.inputError,
-    ]}
-    onPress={async () => {
-      formik.setFieldTouched(
-        `workerEducationList[${index}].uploadCertificate`,
-        true,
-      );
-
-      // Use ImageBucketRN for actual upload
-      let path = "APFD/SAWMILLS/CERTIFICATES/";
-      
-      ImageBucketRN(
-        formik,
-        path,
-        `workerEducationList[${index}].uploadCertificate`,
-        20971520, // 20MB
-        "all",
-        dispatch
-      );
-    }}
-  >
-    <Text style={styles.uploadButtonText}>
-      Upload Certificate / సర్టిఫికేట్ అప్లోడ్ చేయండి
-    </Text>
-  </TouchableOpacity>
-
-  {/* File Preview */}
-  <View style={{ alignItems: "center" }}>
-    {item.uploadCertificate ? (
-      (() => {
-        const fileUrl = item.uploadCertificate;
-        const isImage = /\.(jpg|jpeg|png)$/i.test(fileUrl);
-        const isPdf = /\.pdf$/i.test(fileUrl);
-
-        // ✅ IMAGE PREVIEW
-        if (isImage) {
-          return (
-            <View style={{ marginTop: 10 }}>
-              <Image
-                source={{ uri: fileUrl }}
-                style={{
-                  width: 120,
-                  height: 120,
-                  borderRadius: 8,
-                  resizeMode: "cover",
-                }}
-              />
-            </View>
-          );
-        }
-
-        // ✅ PDF DOWNLOAD ICON
-        if (isPdf) {
-          return (
-            <TouchableOpacity
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginTop: 10,
-              }}
-              onPress={() => Linking.openURL(fileUrl)}
-            >
-              <Ionicons
-                name="document-text-outline"
-                size={24}
-                color="red"
-              />
-              <Text style={{ marginLeft: 8, color: "blue" }}>
-                Download PDF
-              </Text>
-            </TouchableOpacity>
-          );
-        }
-
-        // ✅ DEFAULT (other files or placeholder text)
-        if (fileUrl === "certificate-uploaded") {
-          return (
-            <Text style={[styles.fileNameText, { marginTop: 5 }]}>
-              Certificate selected / సర్టిఫికేట్ ఎంచుకోబడింది
-            </Text>
-          );
-        }
-
-        return <Text style={styles.fileNameText}>{fileUrl}</Text>;
-      })()
-    ) : null}
-  </View>
-
-  {getError(index, "uploadCertificate") ? (
-    <Text style={styles.errorText}>
-      {
-        formik.errors.workerEducationList[index]
-          .uploadCertificate
-      }
-    </Text>
-  ) : null}
-</View>
+                      </View>
+                    )}
                   </View>
-                ))}
+                )})}
 
                 <TouchableOpacity
                   style={styles.addButton}
