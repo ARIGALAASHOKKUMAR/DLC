@@ -42,13 +42,17 @@ export const BasicAndLocationDetails = ({ userData, onUpdateSuccess }) => {
     { id: 4, label: "Agency / ఏజెన్సీ" },
   ];
 
-  // ========== DATE HELPER FUNCTIONS ==========
+  // ========== DATE HELPER FUNCTIONS (FROM WORKING CODE) ==========
+  
+  // Helper function to safely parse date string
   const parseDateString = (dateStr) => {
     if (!dateStr) return null;
+    
     const parts = dateStr.split("-");
     if (parts.length !== 3) return null;
     
     let day, month, year;
+    
     if (parts[0].length === 4) {
       [year, month, day] = parts;
     } else {
@@ -60,11 +64,16 @@ export const BasicAndLocationDetails = ({ userData, onUpdateSuccess }) => {
     const dayNum = parseInt(day, 10);
     
     if (isNaN(yearNum) || isNaN(monthNum) || isNaN(dayNum)) return null;
+    
     return new Date(yearNum, monthNum, dayNum);
   };
 
+  // Create date from string for picker
   const getDateForPicker = (dateStr) => {
-    if (!dateStr) return new Date(2000, 0, 1);
+    if (!dateStr) {
+      return new Date(2000, 0, 1);
+    }
+    
     const parts = dateStr.split("-");
     if (parts.length !== 3) return new Date(2000, 0, 1);
     
@@ -82,15 +91,19 @@ export const BasicAndLocationDetails = ({ userData, onUpdateSuccess }) => {
     if (isNaN(yearNum) || isNaN(monthNum) || isNaN(dayNum)) {
       return new Date(2000, 0, 1);
     }
+    
     return new Date(yearNum, monthNum, dayNum);
   };
 
+  // Format date for API (YYYY-MM-DD)
   const formatDateForAPI = (date) => {
     if (!date) return "";
+    
     const parts = date.split("-");
     if (parts.length !== 3) return date;
     
     let day, month, year;
+    
     if (parts[0].length === 4) {
       [year, month, day] = parts;
     } else {
@@ -99,15 +112,19 @@ export const BasicAndLocationDetails = ({ userData, onUpdateSuccess }) => {
     
     day = day.padStart(2, "0");
     month = month.padStart(2, "0");
+    
     return `${year}-${month}-${day}`;
   };
 
+  // Format date for display (DD-MM-YYYY)
   const formatDateForDisplay = (date) => {
     if (!date) return "";
+    
     const parts = date.split(/[-/]/);
     if (parts.length !== 3) return date;
     
     let day, month, year;
+    
     if (parts[0].length === 4) {
       [year, month, day] = parts;
     } else {
@@ -117,8 +134,10 @@ export const BasicAndLocationDetails = ({ userData, onUpdateSuccess }) => {
     return `${String(day).padStart(2, "0")}-${String(month).padStart(2, "0")}-${year}`;
   };
 
+  // Format initial date from API
   const formatInitialDate = (dateStr) => {
     if (!dateStr) return "";
+    
     if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
       const [year, month, day] = dateStr.split("-");
       return `${day}-${month}-${year}`;
@@ -126,6 +145,7 @@ export const BasicAndLocationDetails = ({ userData, onUpdateSuccess }) => {
     return dateStr;
   };
 
+  // Create minDate for picker (set to year 1900 to allow dates before 1970)
   const getMinDate = () => {
     const minDate = new Date();
     minDate.setFullYear(1900, 0, 1);
@@ -246,15 +266,23 @@ export const BasicAndLocationDetails = ({ userData, onUpdateSuccess }) => {
         "You must be at least 18 years old / మీరు కనీసం 18 సంవత్సరాలు ఉండాలి",
         function (value) {
           if (!value) return false;
+
           const parsedDate = parseDateString(value);
           if (!parsedDate) return false;
+
           const today = new Date();
           const birthDate = new Date(parsedDate);
+          
           let age = today.getFullYear() - birthDate.getFullYear();
           const monthDiff = today.getMonth() - birthDate.getMonth();
-          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+
+          if (
+            monthDiff < 0 ||
+            (monthDiff === 0 && today.getDate() < birthDate.getDate())
+          ) {
             age--;
           }
+
           return age >= 18;
         }
       ),
@@ -313,18 +341,15 @@ export const BasicAndLocationDetails = ({ userData, onUpdateSuccess }) => {
   // ========== SUBMIT HANDLER ==========
   async function handleSubmit(values, { setSubmitting, resetForm }) {
     try {
-      // Create unified payload
+      // Create payload with formatted date (using working code's formatDateForAPI)
       const payload = {
-        // Basic Details
         full_name: values.fullName,
-        date_of_birth: formatDateForAPI(values.dateOfBirth),
+        dateOfBirth: formatDateForAPI(values.dateOfBirth),
         gender: values.gender,
         mobile_number: values.mobileNumber,
         email: values.email,
         profile_image: values.profileImage,
-        employer_type_id: values.employerTypeId ? Number(values.employerTypeId) : "",
-        
-        // Location Details
+        employerTypeId: values.employerTypeId ? Number(values.employerTypeId) : "",
         district: values.district ? Number(values.district) : "",
         mandal: values.mandal ? Number(values.mandal) : "",
         village: values.village ? Number(values.village) : "",
@@ -333,11 +358,11 @@ export const BasicAndLocationDetails = ({ userData, onUpdateSuccess }) => {
         pincode: values.pincode ? Number(values.pincode) : "",
         latitude: values.latitude ? Number(values.latitude) : "",
         longitude: values.longitude ? Number(values.longitude) : "",
-        
-        // Common
         userType: values.userType,
         stageName: values.stageName,
       };
+
+      console.log("ppp", payload);
 
       const response = await commonAPICall(
         BASICPROFILE,
@@ -363,25 +388,34 @@ export const BasicAndLocationDetails = ({ userData, onUpdateSuccess }) => {
     }
   }
 
-  // ========== EVENT HANDLERS ==========
+  // ========== EVENT HANDLERS (FROM WORKING CODE) ==========
+  
+  // Handle date selection
   const handleDateChange = (event, selectedDate) => {
+    // For Android, when user cancels, selectedDate is null
     if (selectedDate === undefined || selectedDate === null) {
       setShowDatePicker(false);
       return;
     }
+
     setShowDatePicker(false);
+    
+    // Extract date components
     const year = selectedDate.getFullYear();
     const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
     const day = String(selectedDate.getDate()).padStart(2, "0");
+    
     const formatted = `${day}-${month}-${year}`;
     formik.setFieldValue("dateOfBirth", formatted);
     formik.setFieldTouched("dateOfBirth", true);
   };
 
+  // Handle date dismiss
   const handleDateDismiss = () => {
     setShowDatePicker(false);
   };
 
+  // Open date picker
   const openDatePicker = () => {
     const date = getDateForPicker(formik.values.dateOfBirth);
     setPickerDate(date);
