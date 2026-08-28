@@ -14,6 +14,7 @@ import {
   Button,
   Modal,
   Linking,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -38,20 +39,34 @@ import labour_img from "../../assets/labour.png";
 import React, { useEffect, useRef, useState } from "react";
 import { ErrorMessage, useFormik } from "formik";
 import * as Yup from "yup";
+import * as LocalAuthentication from "expo-local-authentication";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
 
 const LoginCommon = ({ navigation }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [deptCaptcha, setDeptCaptcha] = useState("");
-  const [storedCaptchaId, setStoredCaptchaId] = useState("");
-  const [captchaImage, setCaptchaImage] = useState("");
+  const [deptCaptcha, setDeptCaptcha] = useState("667938");
+  const [storedCaptchaId, setStoredCaptchaId] = useState("b116c030-794a-4a3c-b0a3-02b4ea72c7df");
+  const [captchaImage, setCaptchaImage] = useState("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAABGCAYAAABll74gAAANv0lEQVR4Xu2cC2xb1RnHXbrYTpwwaBu7pXF4VRPQFdU2hdoJbWjcQGBtYzv33sRJHDe+L7eU9TGmwaY12kDA2ACNDZVNAwSsQwJtQ7w0BgPW0TFQB4VtpQ8eKrS8H4VCXzTZd5omPffzzfW9cQqp+H7Sp5B7/uccoH9//s7j1uUiCIIgCIIgCIIgCIIgCIIgCIIgCIIgCIIgCIIgCIIgCIIgCOLrTW9v73Hdknpzt6R9DPFANpv1Yk2p9Lpcx6Urojd3+GIfQzyQdTXYnsObSsW9idR2iP4RRJ83kfxXRTI5BY9bDH9QudBfK9/lD8pbIT6H2FcdlLfDzz/7a5QO+K/6Bu4zEuJudQbEz+JuZUO8THkHfu6B2Abxp7hbTjaUOI8aUcu0sCDpIfEhPSy9rofFvXpEfAOe/SUfEdLCdMGN+xzTdLepl4GR+7nIYE2ppCtjl4GR+wej0xe1PYc30fqoiVGdxrV43OEInK77/TXyY2DcfqsI1MibAsHct3F/uzS4sifMd8t3gHH7rUP9d5N7ZPMsCQvTwMAbIPotYgPT4b7HJHK7HDicmYcMnW3TG7CuFNp95wUOZ+Yjhq6sb8C64ShPpFaaGNRReBKpy/C4ZviD6ulg1p3YvBYBmbunCY9TjAtduQlg1s2F5h02dl3gVqbjcay4NNR2EmTlt00MbBZvLgsJ1XiMY46MpN5pyM6iej/WlAoY+E7ezB2VMcdzeBYK07wJYa63pbWhaCRSPcjQnx4vCBPwmJhp05Z5wKAbkGF3QNnRGwgqC6trlGbIyCvg9+eR5r0JU+UaPJ4F46C0eAIZ9gN4dnOjW5YaPfL8+WWqDD+fQpqtTsoPMPOjyLQvaCEhtyQiNWkhUc9HxM2o/T48xjFFRlDrUamxG57VYl0ptFfV1xvM7IvuzpTXj+ocGG8ydashO7e0/hxrzKiuzV3BGzVQKz9UXb2kEuuAcYGa3LUGU9fmbJsBjJkyGlV+pNG1dCLWMRrd6tW8FkqUTqwxQ40IM5BZ1y+b1uzhNUumC5V6WHiO0xxcGkqezGuOGQRBGA8LwY2GUkNSL8e6UhBcwvhOX91GY+1cN6pzYNjiD0y8lzP0XrsLwsMLvkGTbgsEunxYw+MP5u7n9AerT8lOxhozwJj3DRq00a28BrW01QJ5HNTQL3GmXosFZmgR8Qre0EtmSrOwhpEPCXN5HcvgWHNMAOZdjrLziw0N9r/O7ADZeLkxO8debHA1jOocGJaNjeVGcg3WmDHlZPlMYxmhLMEazOSa3LmGPjX2sieYcguXcX+C2zHxMvVGztDP4HYztLB0K2fUvSyBYQ0j25D1GjJ5SCz67zPmyApLJoOBd3Fm7lvcpsSwrhSyvlmTwcC7ODP3dVZFR3UODKuTWb3MGfoLbyp1GtaZAdm2hTfn5NrFZ2FNIb3H+Qe28w71qQ7mfooVZoApt3KGbsftmLhH+c1QRoe6GrebAeZcwxn1U9w+SC4qTDBk6IjwY6wZ84CB7zZmZ/23WFMqnb7Y3Xx2TlfGRn0OjLcludqQnVtSv8ea4WDZlTe03fLBzxaNQ4aWb8TtZjSWyTkw516IZ5tc1mVN1LWiHGrst5xkdIYeEVcZMu85wrlYw9BDUpsxQ0ttWDOm6Ra1OcjM7+aEXNEdACeAeecY6+bYu8Lx0VGdo4CmLh+Y+H3O0H3uRML23m1hhrazRWbM0BC2zMbohb74GabZtcwz363cO1RulCnvNLsW29pag0VhLRj0IGfWZ7vONn549LMTfnj+2qAmHxZ3s4UirxnTsBoZTPwSMvQtWUmZxfajsX4ksBoZTPySwdAVsVs6KmKz2H401o8W5cnkKj47lydaHW0N4hq6uiZ3KdZg/FN7onyfgdPD0mD7001eeV7cIy+HxeDLnJnfnlemhrHeCj0s3WTIvmFpUz4sqAPbdtIyeLadb4e2o7pgH3UykrbSaGYc6tZMm3plz8KeKtzXLpCNV/JmLoiK2NbOiroreybVjXiOApqbPd5E6w6DoRelzsOyIowDU77BGfSVYrscbFuP0x+cFOw5CWuc0OjWzgLz7hoy8VCZoTwMJj8V64vBFnxaWHzQaOrhQrrdzrfGmKGzU50Cpv2k0MSmsSXTnj8bj1GMzorzp4BpPykwsXlsgYzteA4zoFZWDbVzIvU3rLFDIChfyWfc4fehWamhXG/IzsGco28EM+JlsorNDLGj0a20jdRs7ACl0LwF0Qe6oovTMUV3m7bWxLhW8VlWUGbicawAk641Ma5VfJb2xRzNUYAgjAcDbzMYOpWKY5kdDp0UFp4C7oAF4+pAbW4BlCEXgcmXw7ONSHPAXs1tzaHjcI+yDkx8sNDY8nPzPOrpuI8VWkS81sS8wwbbu8ZjjEm6BGUuMuuBblG9gWVhdrMunc6fmBW1i8H065Buc1eX9dfuIO2V0bnIrAc6fdEbWBZmN+vS36w/MV1RdzHU0+t4HRh6c5erydYcZniTyTTKzs9ijRPAtNP8zu5yQOR+gccpBbYYZJeRGsuUm8DMXwyZ2qO8a9fUWlhKIsN+AvF9dhLIbtflZ6VOY1t08GwPpzmYD4kjSgZfKllJe4Y3c7ZduwhrGAPXSLXbeFOzmhrrzOjwRZ9BZjafg10j9cVu403Namqss8m48kTqRd7QFS2pFixyiv9UOQBZ+fFC45rGjkmTRr7mKMY8j9IMZj7AZ2p4PA7reNhuBpjzvUGjst0LNSKZLiih1JgDmn1HTC293ttwdA+/SiIrqDOMWVe9Cmt4BEFwg24L12cb1mDAzDMM2bkyZj2Ha7obdFuOGDpWdA4zPItSC1B2/q+ryB+2E1iJcfg+9CsQe03M3A9191GvPQvuc3iUhVjDkw9Li/nsDL8vxxoe0Kzm9dpMaRHWjBm62/QVnDn77GzPQTmyypClBX0q1vCkfXUrOEP32dmeA90q/kOQKY9azmGGN5FcbzB0MtmFNaNJIKj8jjdzdVB+AmuK0ejRLoLS4R9gzB/htuFoqtT9KEtbHhjpEXEtZ9D9PXULLb9B5PPaA4YPQET8JdaMGbKSuoYz56u43YxuUa8zZHVRm4M1PB2VdWuOmDNqa46Oqtl1vKHZYQzWWAHmvcBo5tSrrqP4VRmYKs8GE/dxht5v73jcCBhyx6AxnVzaB/3zXJb+H27n4W/QQZ38H9xuBmh3DvUJiw/i9jFDN3fMnZG0F3C7GbhM6RL1C7GGBx1z25oDlylpX9RyDoy3JfVX3tCellQea0aPQyeC6J60cj1W2SHO7WCw7TjcPhxsL3rI0LA4xO08zMRHMq7Aau6i6PwhS0h8FLePGQwZWtR24nYzMqIS5w2dlfKzsYbHmKFjtuZI+2bHeUN3lNdZzsFTkUqdg2rnt1xH4T3IQaC0WIpq5zfN96eLw9/LgH9ejduHAwz99JF+6nbczgOLwHVcCVH0z4O9cwi6/VyfP2DNmAHV0JCllW9hDSYr6ldzffrYth7W8KAauj9TVV90Digxrub69LFtPawZDk+i9Y+8ocsTqaN2ZDt58uJqWPh9yBsafpewzi5gyAe40mGry8YiduCCkvL5UL8y+TGs4dGNN+1gUdhueYCVjwiXGPXiSHedjj7d7cp0Q7Zt0+/AGp7FwuLq7jbt/SPZWSt6/7a9sm66Idv6ondgDY9QeX416N7n9EXnGMSdSJzpPfQm95ChP3QttF70lII/mLvdkJ1r5MexxglgxgxnaJZtf4g1GND8gO/T6FFWYg1PPiQs5A0Ki8R7sWYQdgIJmn86+QB85YCJn+RNDYb9HtYwMomlE6FtPfoA2No5gDr6Sd7UUBObz1F17sSOyth6ozZmaw4G1M53GsqNlqTtG25OOXz5yLAQnHiKegbWOSHiUstYZuYMenC+W2YZ0TRTg5nTccMOh/LRJS7rb0x2mR+Muc1G1h0Hbb/mdbAgHNG1gS+VbLt6BphzN2/UjKQ/3S2pebbgg8XiIvj9Gj4zD4T+sGuY/9GY9qroGex9QUOmrog9DaVFni340hWxRR2+umuMmflQdrY9hzeZPBlMfGDIzMnU7qpEwvRdvNIRxhccg9cq12HVSJhfpsyM8yXEQGyGReIVjW61ZWBrT73U5EXaPqilE3g8M9SIUA8G/cKQqcPC3/MRSc6HpGY9IuS1iPi8sV38VI1Itk4iv3IybZoEJt1vNKxlbGLlBx7HClgcSmDS/UbDWsYmVn7gcYYDTHwVn509idQNWDNa+GtzXQYzB+U3it2+c0J84EXZz5BhraIv7pEdrRW0iPBdMGkfMu1wsU8LCa14jDFNRtCiYNTtJuY1BNTN94z0Cml7eSwKRt1uYl4c9zi9QgqLv19xht5XLgiOD2PsArXy5byhq2tzAtaUCrsuCln5BRPz4tg536M6/rs/GHpY+g6Y9UMTA/OxA8wcxX2PCQRhRXlW1BVWTrBtvG52UUnS9kDZ8TJ7FYsdquA+ThFc0XIoNxRWToBxd0IcgNgD8TJ7FYsdquA+dvAuEE4FU29kC0FvorXky/RW1NTkJoCRn4L4yO/gTRSnsEUZO8qGUuOu+MBfPMNKkQMD23vyI41lqrbApVbgfk5YPrPlBHZ5n23nQY38kc5KkZD4AauX2UV/NbKgpPEJgiAIgiAIgiAIgiAIgiAIgiAIgiAIgiAIgiAIgiAIgiAIgiAIgiAIgiAIgiAIgiAIgiCIryH/ByBxSKeFjaylAAAAAElFTkSuQmCC");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [enableBiometric, setEnableBiometric] = useState(false);
+  const [isBiometricSupported, setIsBiometricSupported] = useState(false);
+  const [isBiometricLoading, setIsBiometricLoading] = useState(false);
+  const [savedCredentials, setSavedCredentials] = useState(null);
+  const [showBiometricPrompt, setShowBiometricPrompt] = useState(false);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
 
-  const [selectedUserType, setSelectedUserType] = useState(""); // worker | employer
-  const [selectedAction, setSelectedAction] = useState(""); // login | register
+  // Single captcha instance maintained in frontend
+  const [currentCaptcha, setCurrentCaptcha] = useState({
+    text: "",
+    id: "",
+  });
+
+  const [selectedUserType, setSelectedUserType] = useState("");
+  const [selectedAction, setSelectedAction] = useState("");
 
   const [errors, setErrors] = useState({
     username: "",
@@ -60,6 +75,274 @@ const LoginCommon = ({ navigation }) => {
   });
 
   const dispatch = useDispatch();
+
+  // Check biometric support and load saved credentials on mount
+  useEffect(() => {
+    checkBiometricSupportAndLoad();
+  }, []);
+
+  const checkBiometricSupportAndLoad = async () => {
+    try {
+      // Check biometric support
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      setIsBiometricSupported(compatible && enrolled);
+
+      // Load saved credentials
+      const savedUser = await AsyncStorage.getItem("biometric_user");
+      if (savedUser) {
+        const credentials = JSON.parse(savedUser);
+        setSavedCredentials(credentials);
+        
+        // If biometric is supported and credentials exist, auto-prompt
+        if (compatible && enrolled && credentials) {
+          // Generate captcha first
+          await generateFreshCaptcha();
+          // Then show biometric prompt after a small delay
+          setTimeout(() => {
+            setShowBiometricPrompt(true);
+            handleBiometricLogin();
+          }, 500);
+        } else {
+          // Generate captcha for manual login
+          await generateFreshCaptcha();
+        }
+      } else {
+        // Generate captcha for manual login
+        await generateFreshCaptcha();
+      }
+    } catch (error) {
+      console.log("Biometric check error:", error);
+      await generateFreshCaptcha();
+    } finally {
+      setIsFirstLoad(false);
+    }
+  };
+
+  // Generate a fresh captcha and store it in frontend state
+  const generateFreshCaptcha = async () => {
+    try {
+      const response = await commonAPICall(
+        GENERATE_CAPTCHA,
+        {},
+        "get",
+        dispatch
+      );
+      if (response?.data) {
+        const newCaptcha = {
+          text: response.data.captcha || "",
+          id: response.data.captchaId || "",
+        };
+        setCurrentCaptcha(newCaptcha);
+        setCaptchaImage(response.data.captcha || "");
+        setStoredCaptchaId(response.data.captchaId || "");
+        setDeptCaptcha(""); // Clear input
+        console.log("Fresh captcha generated:", newCaptcha.id);
+        return newCaptcha;
+      }
+    } catch (error) {
+      console.log("Captcha generation error:", error);
+    }
+    return null;
+  };
+
+  const loadSavedCredentials = async () => {
+    try {
+      const savedUser = await AsyncStorage.getItem("biometric_user");
+      if (savedUser) {
+        setSavedCredentials(JSON.parse(savedUser));
+      }
+    } catch (error) {
+      console.log("Error loading saved credentials:", error);
+    }
+  };
+
+  const saveCredentialsForBiometric = async (username, password) => {
+    try {
+      await AsyncStorage.setItem(
+        "biometric_user",
+        JSON.stringify({ username, password })
+      );
+      setSavedCredentials({ username, password });
+      showSuccessToast("Biometric login enabled! You can now use fingerprint to login.");
+    } catch (error) {
+      console.log("Error saving credentials:", error);
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    if (!savedCredentials) {
+      setShowBiometricPrompt(false);
+      return;
+    }
+
+    setIsBiometricLoading(true);
+
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: "Scan your fingerprint to login",
+        fallbackLabel: "Use Passcode",
+        cancelLabel: "Cancel",
+        disableDeviceFallback: false,
+      });
+
+      if (result.success) {
+        // Use the current captcha stored in frontend
+        await performBiometricLogin(
+          savedCredentials.username,
+          savedCredentials.password
+        );
+      } else {
+        if (result.error !== "user_cancel") {
+          showErrorToast("Biometric authentication failed. Please try again.");
+        }
+        // User cancelled - show manual login
+        setShowBiometricPrompt(false);
+      }
+    } catch (error) {
+      console.log("Authentication error:", error);
+      showErrorToast("Authentication failed. Please try again.");
+      setShowBiometricPrompt(false);
+    } finally {
+      setIsBiometricLoading(false);
+    }
+  };
+
+  const performBiometricLogin = async (username, password) => {
+    setLoading(true);
+
+    try {
+      // Use the current captcha from frontend state
+      let captchaText = currentCaptcha.text;
+      let captchaId = currentCaptcha.id;
+
+      // If no captcha available, generate one
+      if (!captchaText || !captchaId) {
+        const newCaptcha = await generateFreshCaptcha();
+        if (newCaptcha) {
+          captchaText = newCaptcha.text;
+          captchaId = newCaptcha.id;
+        }
+      }
+
+      // If still no captcha, generate one synchronously
+      if (!captchaText || !captchaId) {
+        const response = await commonAPICall(
+          GENERATE_CAPTCHA,
+          {},
+          "get",
+          dispatch
+        );
+        if (response?.data) {
+          captchaText = response.data.captcha || "";
+          captchaId = response.data.captchaId || "";
+          setCurrentCaptcha({ text: captchaText, id: captchaId });
+          setCaptchaImage(captchaText);
+          setStoredCaptchaId(captchaId);
+        }
+      }
+
+      const loginValues = {
+        username: username.trim(),
+        password: encodeBase64(password),
+        deptCaptcha: captchaText,
+        storedCaptchaId: captchaId,
+        latitude: null,
+        longitude: null,
+        loginSource: "mobile",
+        loginType: "biometric",
+      };
+
+      console.log("Biometric login with captcha ID:", captchaId);
+
+      let response;
+      try {
+        response = await myAxiosLogin.post(LOGIN_END_POINT, loginValues);
+      } catch (firstError) {
+        // If captcha failed, generate new one and retry
+        if (firstError.response?.data?.message?.toLowerCase().includes("captcha")) {
+          console.log("Captcha failed, generating new one...");
+          const newCaptcha = await generateFreshCaptcha();
+          
+          if (newCaptcha) {
+            const retryValues = {
+              ...loginValues,
+              deptCaptcha: newCaptcha.text,
+              storedCaptchaId: newCaptcha.id,
+            };
+            response = await myAxiosLogin.post(LOGIN_END_POINT, retryValues);
+          } else {
+            throw firstError;
+          }
+        } else {
+          throw firstError;
+        }
+      }
+
+      if (response?.status === 200) {
+        const payload = {
+          isLoggedIn: true,
+          isDefaultPassword: response.data.isDefaultPassword,
+          isProfileUpdated: response.data.isProfileUpdated,
+          officerName: response.data.officerName,
+          mobile: response.data.mobile,
+          parents: response.data.parents,
+          services: response.data.services,
+          roleId: response.data.roleId,
+          userId: response.data.userId,
+          username: response.data.username,
+          token: response.data.token,
+          roleName: response.data.roleName,
+          photoPath: response.data.photoPath,
+          lastLoginTime: response.data.lastLoginTime,
+          uuid: response.data.uuid,
+          lastLogoutTime: response.data.lastLogoutTime,
+          lastFailureAttemptTime: response.data.lastFailureAttemptTime,
+          passwordSinceUpdated: response.data.passwordSinceUpdated,
+          latitude: response.data.latitude,
+          longitude: response.data.longitude,
+          loginLocation: response.data.location,
+        };
+
+        dispatch(login(payload));
+
+        const currentTime = new Date().getHours();
+        let welcomeMsg = "";
+
+        if (currentTime >= 5 && currentTime < 12) {
+          welcomeMsg = "Good morning! Authenticated with biometrics successfully!";
+        } else if (currentTime >= 12 && currentTime < 18) {
+          welcomeMsg = "Good afternoon! Welcome back!";
+        } else {
+          welcomeMsg = "Good evening! Welcome back!";
+        }
+
+        showSuccessToast(welcomeMsg);
+        setShowBiometricPrompt(false);
+        navigation.navigate("HOME");
+      } else {
+        showErrorToast("Login failed. Please try again with password.");
+        setShowBiometricPrompt(false);
+      }
+    } catch (error) {
+      console.log("Error during biometric authentication:", error);
+      
+      if (error.response) {
+        const errorMessage = error.response?.data?.message || "Login failed";
+        if (errorMessage.toLowerCase().includes("captcha")) {
+          showErrorToast("Captcha validation failed. Please try again.");
+          await generateFreshCaptcha();
+        } else {
+          showErrorToast(errorMessage);
+        }
+      } else {
+        showErrorToast(error.message || "Something went wrong");
+      }
+      setShowBiometricPrompt(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const encodeBase64 = (value) => {
     try {
@@ -135,17 +418,10 @@ const LoginCommon = ({ navigation }) => {
   };
 
   const generateCaptcha = async () => {
-    try {
-      const response = await commonAPICall(
-        GENERATE_CAPTCHA,
-        {},
-        "get",
-        dispatch,
-      );
-      setCaptchaImage(response?.data?.captcha || "");
-      setStoredCaptchaId(response?.data?.captchaId || "");
-    } catch (error) {
-      console.log("Captcha error:", error);
+    // This will refresh the captcha in UI
+    const newCaptcha = await generateFreshCaptcha();
+    if (newCaptcha) {
+      setDeptCaptcha(""); // Clear input when new captcha is generated
     }
   };
 
@@ -159,7 +435,7 @@ const LoginCommon = ({ navigation }) => {
 
   useEffect(() => {
     logoutUser();
-    generateCaptcha();
+    // Initial captcha generation will be handled by checkBiometricSupportAndLoad
   }, []);
 
   const getLogin = async () => {
@@ -167,15 +443,18 @@ const LoginCommon = ({ navigation }) => {
 
     setLoading(true);
 
+    // Use the current captcha from frontend state
+    const captchaText = deptCaptcha.trim() || currentCaptcha.text;
+    const captchaId = storedCaptchaId || currentCaptcha.id;
+
     const values = {
       username: username.trim(),
       password: encodeBase64(password),
-      deptCaptcha: deptCaptcha.trim(),
-      storedCaptchaId,
+      deptCaptcha: captchaText,
+      storedCaptchaId: captchaId,
       latitude: null,
       longitude: null,
       loginSource: "mobile",
-      // loginType: selectedUserType, // enable if backend needs this
     };
 
     try {
@@ -208,6 +487,10 @@ const LoginCommon = ({ navigation }) => {
 
         dispatch(login(payload));
 
+        if (enableBiometric) {
+          await saveCredentialsForBiometric(username.trim(), password);
+        }
+
         const currentTime = new Date().getHours();
         let welcomeMsg = "";
 
@@ -231,7 +514,7 @@ const LoginCommon = ({ navigation }) => {
           showInfoToast(
             `Your password will expire in ${
               90 - response.data.passwordSinceUpdated
-            } days. Please update it soon.`,
+            } days. Please update it soon.`
           );
         }
 
@@ -241,11 +524,17 @@ const LoginCommon = ({ navigation }) => {
       }
     } catch (error) {
       if (error.response) {
-        setCaptchaImage(error.response?.data?.captcha || "");
-        setStoredCaptchaId(error.response?.data?.captchaId || "");
-        showErrorToast(
-          error.response?.data?.message || "Please enter valid credentials",
-        );
+        // If captcha failed, generate new one
+        if (error.response?.data?.message?.toLowerCase().includes("captcha")) {
+          await generateFreshCaptcha();
+          showErrorToast("Captcha expired. Please try again.");
+        } else {
+          setCaptchaImage(error.response?.data?.captcha || "");
+          setStoredCaptchaId(error.response?.data?.captchaId || "");
+          showErrorToast(
+            error.response?.data?.message || "Please enter valid credentials"
+          );
+        }
       } else {
         showErrorToast(error.message || "Something went wrong");
       }
@@ -358,7 +647,6 @@ const LoginCommon = ({ navigation }) => {
             <Text style={styles.eshramText}>e-Shram Registration</Text>{" "}
           </TouchableOpacity>
         </View>
-        {/* <Ionicons name="chevron-forward" size={22} color="#1e3a5f" /> */}
       </TouchableOpacity>
     </View>
   );
@@ -461,8 +749,8 @@ const LoginCommon = ({ navigation }) => {
         {selectedUserType === "worker"
           ? "Worker / కార్మికుడు"
           : selectedUserType === "agency"
-            ? "Agency / ఏజెన్సీ"
-            : "Employer / యజమాని"}
+          ? "Agency / ఏజెన్సీ"
+          : "Employer / యజమాని"}
       </Text>
 
       <Text style={styles.subtitle}>
@@ -470,8 +758,8 @@ const LoginCommon = ({ navigation }) => {
         {selectedUserType === "worker"
           ? "Worker / కార్మికుడు"
           : selectedUserType === "agency"
-            ? "Agency / ఏజెన్సీ"
-            : "Employer / యజమాని"}{" "}
+          ? "Agency / ఏజెన్సీ"
+          : "Employer / యజమాని"}{" "}
         account
       </Text>
 
@@ -607,6 +895,36 @@ const LoginCommon = ({ navigation }) => {
         ) : null}
       </View>
 
+      {/* Enable Biometric Checkbox */}
+      {/* {isBiometricSupported && (
+        <View style={styles.biometricToggleContainer}>
+          <TouchableOpacity
+            style={styles.biometricToggle}
+            onPress={() => setEnableBiometric(!enableBiometric)}
+            activeOpacity={0.8}
+          >
+            <View
+              style={[
+                styles.checkbox,
+                enableBiometric && styles.checkboxChecked,
+              ]}
+            >
+              {enableBiometric && (
+                <Ionicons name="checkmark" size={16} color="#fff" />
+              )}
+            </View>
+            <View style={styles.biometricToggleTextContainer}>
+              <Text style={styles.biometricToggleText}>
+                Enable Fingerprint Login for next time
+              </Text>
+              <Text style={styles.biometricToggleSubText}>
+                Save credentials securely for faster login
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      )} */}
+
       {/* LOGIN BUTTON */}
       <TouchableOpacity
         style={[
@@ -623,7 +941,6 @@ const LoginCommon = ({ navigation }) => {
           <>
             <Text style={styles.loginText}>
               లాగిన్ చేయండి{" "}
-              {/* {selectedUserType === "worker" ? "కార్మికుడు" : "యజమాని"} */}
             </Text>
             <Ionicons
               name="arrow-forward-outline"
@@ -634,6 +951,30 @@ const LoginCommon = ({ navigation }) => {
           </>
         )}
       </TouchableOpacity>
+
+      {/* BIOMETRIC LOGIN BUTTON - Only show if user has saved credentials and biometric is supported */}
+      {/* {isBiometricSupported && savedCredentials && (
+        <TouchableOpacity
+          style={[
+            styles.biometricButton,
+            isBiometricLoading && styles.biometricButtonDisabled,
+          ]}
+          onPress={handleBiometricLogin}
+          disabled={isBiometricLoading}
+          activeOpacity={0.8}
+        >
+          {isBiometricLoading ? (
+            <ActivityIndicator color="#0b5db3" />
+          ) : (
+            <>
+              <Ionicons name="finger-print-outline" size={24} color="#0b5db3" />
+              <Text style={styles.biometricButtonText}>
+                Login with Fingerprint
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+      )} */}
     </View>
   );
 
@@ -686,10 +1027,10 @@ const LoginCommon = ({ navigation }) => {
           {!selectedUserType
             ? renderRoleSelection()
             : selectedUserType === "agency"
-              ? renderLoginForm()
-              : !selectedAction
-                ? renderActionSelection()
-                : renderLoginForm()}
+            ? renderLoginForm()
+            : !selectedAction
+            ? renderActionSelection()
+            : renderLoginForm()}
 
           <View style={styles.bottomSpacing} />
         </ScrollView>
@@ -707,16 +1048,13 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
   const [otpTimer, setOtpTimer] = useState(0);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
-  const [showErrors, setShowErrors] = useState(false); // 👈 Only this new state
+  const [showErrors, setShowErrors] = useState(false);
 
-  // Refs for OTP inputs
   const otpInputs = useRef([]);
   const dispatch = useDispatch();
 
-  // Simple validation schema
   const validationSchema = Yup.object().shape({
     fullName: Yup.string().required("Full name is required"),
-    // email: Yup.string().email("Invalid email").required("Email is required"),
     mobileNumber: Yup.string()
       .matches(/^[0-9]{10}$/, "10 digits required")
       .required("Mobile number is required"),
@@ -748,33 +1086,33 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
 
   async function handleSubmit(values, { setSubmitting, resetForm }) {
     setLoading(true);
-      if (!values.otp || values.otp.length !== 6) {
-        showErrorToast("Please enter valid 6-digit OTP");
-        return;
-      }
+    if (!values.otp || values.otp.length !== 6) {
+      showErrorToast("Please enter valid 6-digit OTP");
+      return;
+    }
 
-      const payload = {
-  ...values,
-  email: values.email === "" ? "-" : values.email,
-  registrationId: `DL-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`,
-};
+    const payload = {
+      ...values,
+      email: values.email === "" ? "-" : values.email,
+      registrationId: `DL-${new Date().getFullYear()}-${Math.floor(
+        Math.random() * 1000
+      )}`,
+    };
 
-      const res = await commonAPICall(EMPLOYEEREG, payload, "post", dispatch);
+    const res = await commonAPICall(EMPLOYEEREG, payload, "post", dispatch);
 
-      if (res?.status === 200 || res?.status === 201) {
-        setShowOtpModal(false);
-        navigation.goBack();
-        resetForm();
-      } 
+    if (res?.status === 200 || res?.status === 201) {
+      setShowOtpModal(false);
+      navigation.goBack();
+      resetForm();
+    }
   }
 
-  // Handle phone number input
   const handlePhoneChange = (text) => {
     const cleaned = text.replace(/[^0-9]/g, "");
     formik.setFieldValue("mobileNumber", cleaned);
   };
 
-  // Handle OTP input change
   const handleOtpChange = (text, index) => {
     const currentOtp = formik.values.otp;
     let newOtp = currentOtp.split("");
@@ -797,7 +1135,6 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
     }
   };
 
-  // Handle OTP key press
   const handleOtpKeyPress = (e, index) => {
     const currentOtp = formik.values.otp;
     const otpArray = currentOtp.split("");
@@ -807,21 +1144,16 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
     }
   };
 
-  // Handle OTP paste
   const handleOtpPaste = (text) => {
     const digits = text.replace(/\D/g, "").substring(0, 6);
     formik.setFieldValue("otp", digits);
   };
 
-  // 👇 ONLY THIS FUNCTION MATTERS - validates when clicking Send OTP
   const handleSendOtp = async () => {
-    // Set showErrors to true to display all validation errors
     setShowErrors(true);
 
-    // Manually validate all fields except OTP
     const errors = await formik.validateForm();
 
-    // Check if there are errors in required fields (excluding otp)
     const hasErrors =
       errors.fullName ||
       errors.email ||
@@ -831,29 +1163,27 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
       errors.agreeTerms;
 
     if (!hasErrors && formik.values.agreeTerms) {
-        setOtpLoading(true);
-        const mobileNumber = formik.values.mobileNumber;
+      setOtpLoading(true);
+      const mobileNumber = formik.values.mobileNumber;
 
-        const url = `${EMPLOYEEREGOTP}${mobileNumber}&userType=${type.toUpperCase()}`;
-        const getotp = await commonAPICall(url, {}, "post", dispatch);
+      const url = `${EMPLOYEEREGOTP}${mobileNumber}&userType=${type.toUpperCase()}`;
+      const getotp = await commonAPICall(url, {}, "post", dispatch);
 
-        console.log("getotp0", getotp);
+      if (getotp?.status === 200 || getotp?.status === 201) {
+        setOtpSent(true);
+        setOtpTimer(60);
+        setShowOtpModal(true);
 
-        if (getotp?.status === 200 || getotp?.status === 201) {
-          setOtpSent(true);
-          setOtpTimer(60);
-          setShowOtpModal(true);
-
-          const timer = setInterval(() => {
-            setOtpTimer((prev) => {
-              if (prev <= 1) {
-                clearInterval(timer);
-                return 0;
-              }
-              return prev - 1;
-            });
-          }, 1000);
-        }     
+        const timer = setInterval(() => {
+          setOtpTimer((prev) => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      }
     }
   };
 
@@ -1310,6 +1640,7 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
     </View>
   );
 };
+
 export const RegisterWorker = ({ navigation }) => {
   return <CommonRegistrationForm navigation={navigation} type="DLC Worker" />;
 };

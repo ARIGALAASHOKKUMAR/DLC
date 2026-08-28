@@ -9,7 +9,7 @@
     "splash": {
       "image": "./assets/labour_log.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0b5db3"
+      "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,
@@ -41,7 +41,7 @@
         {
           "image": "./assets/labour_log.png",
           "resizeMode": "contain",
-          "backgroundColor": "#0b5db3"
+          "backgroundColor": "#ffffff"
         }
       ],
       [

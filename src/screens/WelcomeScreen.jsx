@@ -1,5 +1,5 @@
 // screens/WelcomeScreen.js
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,9 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
-  TouchableOpacity,
   StatusBar,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import amblem from '../../assets/labour_log.png';
 
 const { width, height } = Dimensions.get('window');
@@ -68,14 +66,7 @@ const WelcomeScreen = ({ navigation }) => {
     };
   }, [navigation]);
 
-  // Handle manual navigation test
-  const handleGetStarted = () => {
-    // Clear the auto-navigation timer if user clicks manually
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-    }
-    navigation.replace('Login');
-  };
+  
 
   return (
     <View style={styles.container}>
