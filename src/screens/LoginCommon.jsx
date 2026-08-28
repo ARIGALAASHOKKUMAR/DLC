@@ -11,12 +11,12 @@ import {
   Platform,
   StatusBar,
   Dimensions,
-  Button,
   Modal,
   Linking,
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as Location from "expo-location";
 import {
   commonAPICall,
   EMPLOYEEREG,
@@ -40,27 +40,21 @@ import {
 import amblem from "../../assets/labour_log.png";
 import labour_img from "../../assets/labour.png";
 import React, { useEffect, useRef, useState } from "react";
-import { ErrorMessage, useFormik } from "formik";
 import * as Yup from "yup";
-import * as LocalAuthentication from "expo-local-authentication";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
+import { useFormik } from "formik";
 
 const { width } = Dimensions.get("window");
 
 const LoginCommon = ({ navigation }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [deptCaptcha, setDeptCaptcha] = useState("667938");
-  const [storedCaptchaId, setStoredCaptchaId] = useState("b116c030-794a-4a3c-b0a3-02b4ea72c7df");
-  const [captchaImage, setCaptchaImage] = useState("data:image/png;base64,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");
+  const [deptCaptcha, setDeptCaptcha] = useState("");
+  const [storedCaptchaId, setStoredCaptchaId] = useState("");
+  const [captchaImage, setCaptchaImage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [enableBiometric, setEnableBiometric] = useState(false);
-  const [isBiometricSupported, setIsBiometricSupported] = useState(false);
-  const [isBiometricLoading, setIsBiometricLoading] = useState(false);
-  const [savedCredentials, setSavedCredentials] = useState(null);
-  const [showBiometricPrompt, setShowBiometricPrompt] = useState(false);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   // Single captcha instance maintained in frontend
@@ -80,48 +74,10 @@ const LoginCommon = ({ navigation }) => {
 
   const dispatch = useDispatch();
 
-  // Check biometric support and load saved credentials on mount
+  // Load on mount
   useEffect(() => {
-    checkBiometricSupportAndLoad();
+    generateFreshCaptcha();
   }, []);
-
-  const checkBiometricSupportAndLoad = async () => {
-    try {
-      // Check biometric support
-      const compatible = await LocalAuthentication.hasHardwareAsync();
-      const enrolled = await LocalAuthentication.isEnrolledAsync();
-      setIsBiometricSupported(compatible && enrolled);
-
-      // Load saved credentials
-      const savedUser = await AsyncStorage.getItem("biometric_user");
-      if (savedUser) {
-        const credentials = JSON.parse(savedUser);
-        setSavedCredentials(credentials);
-        
-        // If biometric is supported and credentials exist, auto-prompt
-        if (compatible && enrolled && credentials) {
-          // Generate captcha first
-          await generateFreshCaptcha();
-          // Then show biometric prompt after a small delay
-          setTimeout(() => {
-            setShowBiometricPrompt(true);
-            handleBiometricLogin();
-          }, 500);
-        } else {
-          // Generate captcha for manual login
-          await generateFreshCaptcha();
-        }
-      } else {
-        // Generate captcha for manual login
-        await generateFreshCaptcha();
-      }
-    } catch (error) {
-      console.log("Biometric check error:", error);
-      await generateFreshCaptcha();
-    } finally {
-      setIsFirstLoad(false);
-    }
-  };
 
   // Generate a fresh captcha and store it in frontend state
   const generateFreshCaptcha = async () => {
@@ -148,204 +104,6 @@ const LoginCommon = ({ navigation }) => {
       console.log("Captcha generation error:", error);
     }
     return null;
-  };
-
-  const loadSavedCredentials = async () => {
-    try {
-      const savedUser = await AsyncStorage.getItem("biometric_user");
-      if (savedUser) {
-        setSavedCredentials(JSON.parse(savedUser));
-      }
-    } catch (error) {
-      console.log("Error loading saved credentials:", error);
-    }
-  };
-
-  const saveCredentialsForBiometric = async (username, password) => {
-    try {
-      await AsyncStorage.setItem(
-        "biometric_user",
-        JSON.stringify({ username, password })
-      );
-      setSavedCredentials({ username, password });
-      showSuccessToast("Biometric login enabled! You can now use fingerprint to login.");
-    } catch (error) {
-      console.log("Error saving credentials:", error);
-    }
-  };
-
-  const handleBiometricLogin = async () => {
-    if (!savedCredentials) {
-      setShowBiometricPrompt(false);
-      return;
-    }
-
-    setIsBiometricLoading(true);
-
-    try {
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: "Scan your fingerprint to login",
-        fallbackLabel: "Use Passcode",
-        cancelLabel: "Cancel",
-        disableDeviceFallback: false,
-      });
-
-      if (result.success) {
-        // Use the current captcha stored in frontend
-        await performBiometricLogin(
-          savedCredentials.username,
-          savedCredentials.password
-        );
-      } else {
-        if (result.error !== "user_cancel") {
-          showErrorToast("Biometric authentication failed. Please try again.");
-        }
-        // User cancelled - show manual login
-        setShowBiometricPrompt(false);
-      }
-    } catch (error) {
-      console.log("Authentication error:", error);
-      showErrorToast("Authentication failed. Please try again.");
-      setShowBiometricPrompt(false);
-    } finally {
-      setIsBiometricLoading(false);
-    }
-  };
-
-  const performBiometricLogin = async (username, password) => {
-    setLoading(true);
-
-    try {
-      // Use the current captcha from frontend state
-      let captchaText = currentCaptcha.text;
-      let captchaId = currentCaptcha.id;
-
-      // If no captcha available, generate one
-      if (!captchaText || !captchaId) {
-        const newCaptcha = await generateFreshCaptcha();
-        if (newCaptcha) {
-          captchaText = newCaptcha.text;
-          captchaId = newCaptcha.id;
-        }
-      }
-
-      // If still no captcha, generate one synchronously
-      if (!captchaText || !captchaId) {
-        const response = await commonAPICall(
-          GENERATE_CAPTCHA,
-          {},
-          "get",
-          dispatch
-        );
-        if (response?.data) {
-          captchaText = response.data.captcha || "";
-          captchaId = response.data.captchaId || "";
-          setCurrentCaptcha({ text: captchaText, id: captchaId });
-          setCaptchaImage(captchaText);
-          setStoredCaptchaId(captchaId);
-        }
-      }
-
-      const loginValues = {
-        username: username.trim(),
-        password: encodeBase64(password),
-        deptCaptcha: captchaText,
-        storedCaptchaId: captchaId,
-        latitude: null,
-        longitude: null,
-        loginSource: "mobile",
-        loginType: "biometric",
-      };
-
-      console.log("Biometric login with captcha ID:", captchaId);
-
-      let response;
-      try {
-        response = await myAxiosLogin.post(LOGIN_END_POINT, loginValues);
-      } catch (firstError) {
-        // If captcha failed, generate new one and retry
-        if (firstError.response?.data?.message?.toLowerCase().includes("captcha")) {
-          console.log("Captcha failed, generating new one...");
-          const newCaptcha = await generateFreshCaptcha();
-          
-          if (newCaptcha) {
-            const retryValues = {
-              ...loginValues,
-              deptCaptcha: newCaptcha.text,
-              storedCaptchaId: newCaptcha.id,
-            };
-            response = await myAxiosLogin.post(LOGIN_END_POINT, retryValues);
-          } else {
-            throw firstError;
-          }
-        } else {
-          throw firstError;
-        }
-      }
-
-      if (response?.status === 200) {
-        const payload = {
-          isLoggedIn: true,
-          isDefaultPassword: response.data.isDefaultPassword,
-          isProfileUpdated: response.data.isProfileUpdated,
-          officerName: response.data.officerName,
-          mobile: response.data.mobile,
-          parents: response.data.parents,
-          services: response.data.services,
-          roleId: response.data.roleId,
-          userId: response.data.userId,
-          username: response.data.username,
-          token: response.data.token,
-          roleName: response.data.roleName,
-          photoPath: response.data.photoPath,
-          lastLoginTime: response.data.lastLoginTime,
-          uuid: response.data.uuid,
-          lastLogoutTime: response.data.lastLogoutTime,
-          lastFailureAttemptTime: response.data.lastFailureAttemptTime,
-          passwordSinceUpdated: response.data.passwordSinceUpdated,
-          latitude: response.data.latitude,
-          longitude: response.data.longitude,
-          loginLocation: response.data.location,
-        };
-
-        dispatch(login(payload));
-
-        const currentTime = new Date().getHours();
-        let welcomeMsg = "";
-
-        if (currentTime >= 5 && currentTime < 12) {
-          welcomeMsg = "Good morning! Authenticated with biometrics successfully!";
-        } else if (currentTime >= 12 && currentTime < 18) {
-          welcomeMsg = "Good afternoon! Welcome back!";
-        } else {
-          welcomeMsg = "Good evening! Welcome back!";
-        }
-
-        showSuccessToast(welcomeMsg);
-        setShowBiometricPrompt(false);
-        navigation.navigate("HOME");
-      } else {
-        showErrorToast("Login failed. Please try again with password.");
-        setShowBiometricPrompt(false);
-      }
-    } catch (error) {
-      console.log("Error during biometric authentication:", error);
-      
-      if (error.response) {
-        const errorMessage = error.response?.data?.message || "Login failed";
-        if (errorMessage.toLowerCase().includes("captcha")) {
-          showErrorToast("Captcha validation failed. Please try again.");
-          await generateFreshCaptcha();
-        } else {
-          showErrorToast(errorMessage);
-        }
-      } else {
-        showErrorToast(error.message || "Something went wrong");
-      }
-      setShowBiometricPrompt(false);
-    } finally {
-      setLoading(false);
-    }
   };
 
   const encodeBase64 = (value) => {
@@ -422,10 +180,9 @@ const LoginCommon = ({ navigation }) => {
   };
 
   const generateCaptcha = async () => {
-    // This will refresh the captcha in UI
     const newCaptcha = await generateFreshCaptcha();
     if (newCaptcha) {
-      setDeptCaptcha(""); // Clear input when new captcha is generated
+      setDeptCaptcha("");
     }
   };
 
@@ -439,7 +196,6 @@ const LoginCommon = ({ navigation }) => {
 
   useEffect(() => {
     logoutUser();
-    // Initial captcha generation will be handled by checkBiometricSupportAndLoad
   }, []);
 
   const getLogin = async () => {
@@ -447,7 +203,6 @@ const LoginCommon = ({ navigation }) => {
 
     setLoading(true);
 
-    // Use the current captcha from frontend state
     const captchaText = deptCaptcha.trim() || currentCaptcha.text;
     const captchaId = storedCaptchaId || currentCaptcha.id;
 
@@ -491,10 +246,6 @@ const LoginCommon = ({ navigation }) => {
 
         dispatch(login(payload));
 
-        if (enableBiometric) {
-          await saveCredentialsForBiometric(username.trim(), password);
-        }
-
         const currentTime = new Date().getHours();
         let welcomeMsg = "";
 
@@ -528,7 +279,6 @@ const LoginCommon = ({ navigation }) => {
       }
     } catch (error) {
       if (error.response) {
-        // If captcha failed, generate new one
         if (error.response?.data?.message?.toLowerCase().includes("captcha")) {
           await generateFreshCaptcha();
           showErrorToast("Captcha expired. Please try again.");
@@ -588,7 +338,7 @@ const LoginCommon = ({ navigation }) => {
         <View style={styles.optionTextWrap}>
           <Text style={styles.optionTitle}>
             I am a Worker{"\n"} నేను కార్మికుడు
-          </Text>{" "}
+          </Text>
         </View>
         <Ionicons name="chevron-forward" size={22} color="#1e3a5f" />
       </TouchableOpacity>
@@ -648,7 +398,7 @@ const LoginCommon = ({ navigation }) => {
             onPress={() => Linking.openURL("https://eshram.gov.in/")}
           >
             <Ionicons name="document-text-outline" size={20} color="#fff" />
-            <Text style={styles.eshramText}>e-Shram Registration</Text>{" "}
+            <Text style={styles.eshramText}>e-Shram Registration</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -899,36 +649,6 @@ const LoginCommon = ({ navigation }) => {
         ) : null}
       </View>
 
-      {/* Enable Biometric Checkbox */}
-      {/* {isBiometricSupported && (
-        <View style={styles.biometricToggleContainer}>
-          <TouchableOpacity
-            style={styles.biometricToggle}
-            onPress={() => setEnableBiometric(!enableBiometric)}
-            activeOpacity={0.8}
-          >
-            <View
-              style={[
-                styles.checkbox,
-                enableBiometric && styles.checkboxChecked,
-              ]}
-            >
-              {enableBiometric && (
-                <Ionicons name="checkmark" size={16} color="#fff" />
-              )}
-            </View>
-            <View style={styles.biometricToggleTextContainer}>
-              <Text style={styles.biometricToggleText}>
-                Enable Fingerprint Login for next time
-              </Text>
-              <Text style={styles.biometricToggleSubText}>
-                Save credentials securely for faster login
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-      )} */}
-
       {/* LOGIN BUTTON */}
       <TouchableOpacity
         style={[
@@ -943,9 +663,7 @@ const LoginCommon = ({ navigation }) => {
           <ActivityIndicator color="#fff" />
         ) : (
           <>
-            <Text style={styles.loginText}>
-              లాగిన్ చేయండి{" "}
-            </Text>
+            <Text style={styles.loginText}>లాగిన్ చేయండి</Text>
             <Ionicons
               name="arrow-forward-outline"
               size={20}
@@ -955,30 +673,6 @@ const LoginCommon = ({ navigation }) => {
           </>
         )}
       </TouchableOpacity>
-
-      {/* BIOMETRIC LOGIN BUTTON - Only show if user has saved credentials and biometric is supported */}
-      {/* {isBiometricSupported && savedCredentials && (
-        <TouchableOpacity
-          style={[
-            styles.biometricButton,
-            isBiometricLoading && styles.biometricButtonDisabled,
-          ]}
-          onPress={handleBiometricLogin}
-          disabled={isBiometricLoading}
-          activeOpacity={0.8}
-        >
-          {isBiometricLoading ? (
-            <ActivityIndicator color="#0b5db3" />
-          ) : (
-            <>
-              <Ionicons name="finger-print-outline" size={24} color="#0b5db3" />
-              <Text style={styles.biometricButtonText}>
-                Login with Fingerprint
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
-      )} */}
     </View>
   );
 
@@ -1160,40 +854,70 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
     }
   };
 
-  // Get location on mount
+  // Get location on mount with proper error handling
   const getLocation = async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-
-      if (status !== "granted") {
+      // Check if location services are enabled
+      const enabled = await Location.hasServicesEnabledAsync();
+      if (!enabled) {
         Alert.alert(
-          "Permission denied / అనుమతి నిరాకరించబడింది",
-          "Location permission is required / స్థాన అనుమతి అవసరం",
+          "Location Services Disabled / స్థాన సేవలు నిలిపివేయబడ్డాయి",
+          "Please enable location services in your device settings / దయచేసి మీ పరికర సెట్టింగ్లలో స్థాన సేవలను ప్రారంభించండి",
+          [{ text: "OK" }]
         );
         return;
       }
 
+      // Request foreground permissions
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission denied / అనుమతి నిరాకరించబడింది",
+          "Location permission is required to auto-fetch coordinates. You can manually enter them. / స్థాన అనుమతి అవసరం. మీరు వాటిని మాన్యువల్గా నమోదు చేయవచ్చు.",
+          [{ text: "OK" }]
+        );
+        return;
+      }
+
+      // Get current position with timeout
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
+        timeout: 10000,
       });
 
-      if (!formik.values.latitude) {
-        formik.setFieldValue(
-          "latitude",
-          String(location?.coords?.latitude || ""),
-        );
-      }
-      if (!formik.values.longitude) {
-        formik.setFieldValue(
-          "longitude",
-          String(location?.coords?.longitude || ""),
-        );
+      if (location?.coords) {
+        const { latitude, longitude } = location.coords;
+        
+        if (latitude && longitude) {
+          // Only set if fields are empty
+          if (!formik.values.latitude) {
+            formik.setFieldValue("latitude", String(latitude));
+          }
+          if (!formik.values.longitude) {
+            formik.setFieldValue("longitude", String(longitude));
+          }
+        }
       }
     } catch (error) {
-      console.log("Location error:", error);
+      console.log("Location error details:", error);
+      
+      // Handle specific error types
+      let errorMessage = "Unable to fetch location / స్థానాన్ని పొందడం సాధ్యం కాలేదు";
+      
+      if (error.code === 'E_LOCATION_TIMEOUT') {
+        errorMessage = "Location request timed out. Please try again or enter manually. / స్థాన అభ్యర్థన సమయం మించిపోయింది. దయచేసి మళ్లీ ప్రయత్నించండి లేదా మాన్యువల్గా నమోదు చేయండి.";
+      } else if (error.code === 'E_LOCATION_UNAVAILABLE') {
+        errorMessage = "Location unavailable. Please check your GPS and try again. / స్థానం అందుబాటులో లేదు. దయచేసి మీ GPSని తనిఖీ చేసి మళ్లీ ప్రయత్నించండి.";
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = "Location request timed out. Please try again. / స్థాన అభ్యర్థన సమయం మించిపోయింది. దయచేసి మళ్లీ ప్రయత్నించండి.";
+      }
+      
+      // Show error but don't block the user - they can manually enter
       Alert.alert(
-        "Error / లోపం",
-        "Unable to fetch location / స్థానాన్ని పొందడం సాధ్యం కాలేదు",
+        "Location Error / స్థాన లోపం",
+        errorMessage,
+        [{ text: "OK" }]
       );
     }
   };
@@ -1457,39 +1181,6 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
               )}
             </View>
 
-            {/* Email */}
-            <View style={styles.fieldBlock}>
-              <View
-                style={[
-                  styles.inputWrapper,
-                  showErrors && formik.errors.email && styles.inputWrapperError,
-                ]}
-              >
-                <Ionicons
-                  name="mail-outline"
-                  size={20}
-                  color="#5f6f94"
-                  style={styles.leftIcon}
-                />
-                <TextInput
-                  placeholder={
-                    isWorker
-                      ? "కార్మికుడి ఇమెయిల్ నమోదు చేయండి"
-                      : "యజమాని ఇమెయిల్ నమోదు చేయండి"
-                  }
-                  placeholderTextColor="#94a3b8"
-                  style={styles.input}
-                  value={formik.values.email}
-                  onChangeText={formik.handleChange("email")}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                />
-              </View>
-              {showErrors && formik.errors.email && (
-                <Text style={styles.errorText}>{formik.errors.email}</Text>
-              )}
-            </View>
-
             {/* Phone */}
             <View style={styles.fieldBlock}>
               <View
@@ -1615,159 +1306,175 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
               )}
             </View>
 
-            {/* ===== LOCATION FIELDS ===== */}
-
             {/* District */}
-            <View style={styles.inputBlock}>
-              <Text style={styles.label}>
-                District / జిల్లా <Text style={styles.requiredStar}>*</Text>
-              </Text>
-              <View
-                style={[
-                  styles.selectBox,
-                  showErrors &&
-                    formik.errors.district &&
-                    styles.inputError,
-                ]}
-              >
-                <Picker
-                  style={styles.picker}
-                  selectedValue={formik.values.district}
-                  onValueChange={(itemValue) => {
-                    formik.setFieldTouched("district", true);
-                    formik.setFieldValue("district", itemValue);
-                    formik.setFieldValue("mandal", "");
-                    formik.setFieldValue("village", "");
-                    setMandal([]);
-                    setVillage([]);
+            {/* District */}
+<View style={styles.fieldBlock}>
+  <View
+    style={[
+      styles.inputWrapper,
+      showErrors &&
+        formik.errors.district &&
+        styles.inputWrapperError,
+    ]}
+  >
+    <Ionicons
+      name="location-outline"
+      size={20}
+      color="#5f6f94"
+      style={styles.leftIcon}
+    />
+    <Picker
+      style={styles.picker}
+      selectedValue={formik.values.district}
+      onValueChange={(itemValue) => {
+        formik.setFieldTouched("district", true);
+        formik.setFieldValue("district", itemValue);
+        formik.setFieldValue("mandal", "");
+        formik.setFieldValue("village", "");
+        setMandal([]);
+        setVillage([]);
 
-                    if (itemValue) {
-                      getmandals(itemValue);
-                    }
-                  }}
-                >
-                  <Picker.Item
-                    label="---Select District / జిల్లాను ఎంచుకోండి---"
-                    value=""
-                  />
-                  {dists.map((dist) => (
-                    <Picker.Item
-                      key={String(dist.dist_code)}
-                      label={dist.dist_name}
-                      value={String(dist.dist_code)}
-                    />
-                  ))}
-                </Picker>
-              </View>
-              {showErrors && formik.errors.district && (
-                <Text style={styles.errorText}>{formik.errors.district}</Text>
-              )}
-            </View>
+        if (itemValue) {
+          getmandals(itemValue);
+        }
+      }}
+    >
+      <Picker.Item
+        label="Select District / జిల్లాను ఎంచుకోండి---"
+        value=""
+      />
+      {dists.map((dist) => (
+        <Picker.Item
+          key={String(dist.dist_code)}
+          label={dist.dist_name}
+          value={String(dist.dist_code)}
+        />
+      ))}
+    </Picker>
+  </View>
+  {showErrors && formik.errors.district && (
+    <Text style={styles.errorText}>{formik.errors.district}</Text>
+  )}
+</View>
 
-            {/* Mandal */}
-            <View style={styles.inputBlock}>
-              <Text style={styles.label}>
-                Mandal / మండలం <Text style={styles.requiredStar}>*</Text>
-              </Text>
-              <View
-                style={[
-                  styles.selectBox,
-                  showErrors &&
-                    formik.errors.mandal &&
-                    styles.inputError,
-                ]}
-              >
-                <Picker
-                  style={styles.picker}
-                  selectedValue={formik.values.mandal}
-                  onValueChange={(itemValue) => {
-                    formik.setFieldTouched("mandal", true);
-                    formik.setFieldValue("mandal", itemValue);
-                    formik.setFieldValue("village", "");
-                    setVillage([]);
+{/* Mandal */}
+<View style={styles.fieldBlock}>
+  <View
+    style={[
+      styles.inputWrapper,
+      showErrors &&
+        formik.errors.mandal &&
+        styles.inputWrapperError,
+    ]}
+  >
+    <Ionicons
+      name="location-outline"
+      size={20}
+      color="#5f6f94"
+      style={styles.leftIcon}
+    />
+    <Picker
+      style={styles.picker}
+      selectedValue={formik.values.mandal}
+      onValueChange={(itemValue) => {
+        formik.setFieldTouched("mandal", true);
+        formik.setFieldValue("mandal", itemValue);
+        formik.setFieldValue("village", "");
+        setVillage([]);
 
-                    if (itemValue && formik.values.district) {
-                      getVillages(formik.values.district, itemValue);
-                    }
-                  }}
-                  enabled={!!formik.values.district}
-                >
-                  <Picker.Item
-                    label="---Select Mandal / మండలాన్ని ఎంచుకోండి---"
-                    value=""
-                  />
-                  {mandal.map((item) => (
-                    <Picker.Item
-                      key={String(item.mandal_code)}
-                      label={item.mandal_name}
-                      value={String(item.mandal_code)}
-                    />
-                  ))}
-                </Picker>
-              </View>
-              {showErrors && formik.errors.mandal && (
-                <Text style={styles.errorText}>{formik.errors.mandal}</Text>
-              )}
-            </View>
+        if (itemValue && formik.values.district) {
+          getVillages(formik.values.district, itemValue);
+        }
+      }}
+      enabled={!!formik.values.district}
+    >
+      <Picker.Item
+        label="Select Mandal / మండలాన్ని ఎంచుకోండి---"
+        value=""
+      />
+      {mandal.map((item) => (
+        <Picker.Item
+          key={String(item.mandal_code)}
+          label={item.mandal_name}
+          value={String(item.mandal_code)}
+        />
+      ))}
+    </Picker>
+  </View>
+  {showErrors && formik.errors.mandal && (
+    <Text style={styles.errorText}>{formik.errors.mandal}</Text>
+  )}
+</View>
 
-            {/* Village */}
-            <View style={styles.inputBlock}>
-              <Text style={styles.label}>
-                Village / గ్రామం <Text style={styles.requiredStar}>*</Text>
-              </Text>
-              <View
-                style={[
-                  styles.selectBox,
-                  showErrors &&
-                    formik.errors.village &&
-                    styles.inputError,
-                ]}
-              >
-                <Picker
-                  style={styles.picker}
-                  selectedValue={formik.values.village}
-                  onValueChange={(itemValue) => {
-                    formik.setFieldTouched("village", true);
-                    formik.setFieldValue("village", itemValue);
-                  }}
-                  enabled={!!formik.values.mandal}
-                >
-                  <Picker.Item
-                    label="---Select Village / గ్రామాన్ని ఎంచుకోండి---"
-                    value=""
-                  />
-                  {village.map((item) => (
-                    <Picker.Item
-                      key={String(item.village_code)}
-                      label={item.village_name}
-                      value={String(item.village_code)}
-                    />
-                  ))}
-                </Picker>
-              </View>
-              {showErrors && formik.errors.village && (
-                <Text style={styles.errorText}>{formik.errors.village}</Text>
-              )}
-            </View>
+{/* Village */}
+<View style={styles.fieldBlock}>
+  <View
+    style={[
+      styles.inputWrapper,
+      showErrors &&
+        formik.errors.village &&
+        styles.inputWrapperError,
+    ]}
+  >
+    <Ionicons
+      name="location-outline"
+      size={20}
+      color="#5f6f94"
+      style={styles.leftIcon}
+    />
+    <Picker
+      style={styles.picker}
+      selectedValue={formik.values.village}
+      onValueChange={(itemValue) => {
+        formik.setFieldTouched("village", true);
+        formik.setFieldValue("village", itemValue);
+      }}
+      enabled={!!formik.values.mandal}
+    >
+      <Picker.Item
+        label="Select Village / గ్రామాన్ని ఎంచుకోండి---"
+        value=""
+      />
+      {village.map((item) => (
+        <Picker.Item
+          key={String(item.village_code)}
+          label={item.village_name}
+          value={String(item.village_code)}
+        />
+      ))}
+    </Picker>
+  </View>
+  {showErrors && formik.errors.village && (
+    <Text style={styles.errorText}>{formik.errors.village}</Text>
+  )}
+</View>
 
             {/* Door No. */}
-            <View style={styles.inputBlock}>
-              <Text style={styles.label}>
-                Door No. / డోర్ నంబర్ <Text style={styles.requiredStar}>*</Text>
-              </Text>
-              <TextInput
+            <View style={styles.fieldBlock}>
+              <View
                 style={[
-                  styles.input,
+                  styles.inputWrapper,
                   showErrors &&
                     formik.errors.plotOrHouseNumber &&
-                    styles.inputError,
+                    styles.inputWrapperError,
                 ]}
-                value={formik.values.plotOrHouseNumber}
-                onChangeText={formik.handleChange("plotOrHouseNumber")}
-                onBlur={formik.handleBlur("plotOrHouseNumber")}
-                placeholder="Enter Door No. / ద్వారం నంబర్ నమోదు చేయండి"
-                maxLength={20}
-              />
+              >
+                <Ionicons
+                  name="home-outline"
+                  size={20}
+                  color="#5f6f94"
+                  style={styles.leftIcon}
+                />
+                <TextInput
+                  placeholder="Door No. / ద్వారం నంబర్ నమోదు చేయండి"
+                  placeholderTextColor="#94a3b8"
+                  style={styles.input}
+                  value={formik.values.plotOrHouseNumber}
+                  onChangeText={formik.handleChange("plotOrHouseNumber")}
+                  onBlur={formik.handleBlur("plotOrHouseNumber")}
+                  maxLength={20}
+                />
+              </View>
               {showErrors && formik.errors.plotOrHouseNumber && (
                 <Text style={styles.errorText}>
                   {formik.errors.plotOrHouseNumber}
@@ -1776,93 +1483,125 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
             </View>
 
             {/* Landmark */}
-            <View style={styles.inputBlock}>
-              <Text style={styles.label}>
-                Land mark / ల్యాండ్ మార్క్ <Text style={styles.requiredStar}>*</Text>
-              </Text>
-              <TextInput
+            <View style={styles.fieldBlock}>
+              <View
                 style={[
-                  styles.input,
+                  styles.inputWrapper,
                   showErrors &&
                     formik.errors.landmark &&
-                    styles.inputError,
+                    styles.inputWrapperError,
                 ]}
-                value={formik.values.landmark}
-                onChangeText={formik.handleChange("landmark")}
-                onBlur={formik.handleBlur("landmark")}
-                placeholder="Enter Landmark / ల్యాండ్మార్క్ నమోదు చేయండి"
-                maxLength={100}
-              />
+              >
+                <Ionicons
+                  name="pin-outline"
+                  size={20}
+                  color="#5f6f94"
+                  style={styles.leftIcon}
+                />
+                <TextInput
+                  placeholder="Landmark / ల్యాండ్మార్క్ నమోదు చేయండి"
+                  placeholderTextColor="#94a3b8"
+                  style={styles.input}
+                  value={formik.values.landmark}
+                  onChangeText={formik.handleChange("landmark")}
+                  onBlur={formik.handleBlur("landmark")}
+                  maxLength={100}
+                />
+              </View>
               {showErrors && formik.errors.landmark && (
                 <Text style={styles.errorText}>{formik.errors.landmark}</Text>
               )}
             </View>
 
             {/* Pincode */}
-            <View style={styles.inputBlock}>
-              <Text style={styles.label}>
-                Pin Code / పిన్ కోడ్ <Text style={styles.requiredStar}>*</Text>
-              </Text>
-              <TextInput
+            <View style={styles.fieldBlock}>
+              <View
                 style={[
-                  styles.input,
+                  styles.inputWrapper,
                   showErrors &&
                     formik.errors.pincode &&
-                    styles.inputError,
+                    styles.inputWrapperError,
                 ]}
-                value={formik.values.pincode}
-                onChangeText={formik.handleChange("pincode")}
-                onBlur={formik.handleBlur("pincode")}
-                placeholder="Enter Pin Code / పిన్ కోడ్ నమోదు చేయండి"
-                keyboardType="numeric"
-                maxLength={6}
-              />
+              >
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color="#5f6f94"
+                  style={styles.leftIcon}
+                />
+                <TextInput
+                  placeholder="Pin Code / పిన్ కోడ్ నమోదు చేయండి"
+                  placeholderTextColor="#94a3b8"
+                  style={styles.input}
+                  value={formik.values.pincode}
+                  onChangeText={formik.handleChange("pincode")}
+                  onBlur={formik.handleBlur("pincode")}
+                  keyboardType="numeric"
+                  maxLength={6}
+                />
+              </View>
               {showErrors && formik.errors.pincode && (
                 <Text style={styles.errorText}>{formik.errors.pincode}</Text>
               )}
             </View>
 
-            {/* Latitude & Longitude - Auto fetched */}
+            {/* Latitude & Longitude */}
             <View style={styles.rowFields}>
-              <View style={[styles.inputBlock, styles.halfField]}>
-                <Text style={styles.label}>
-                  Latitude / అక్షాంశం <Text style={styles.requiredStar}>*</Text>
-                </Text>
-                <TextInput
+              <View style={[styles.fieldBlock, styles.halfField]}>
+                <View
                   style={[
-                    styles.input,
+                    styles.inputWrapper,
                     showErrors &&
                       formik.errors.latitude &&
-                      styles.inputError,
+                      styles.inputWrapperError,
                   ]}
-                  value={formik.values.latitude}
-                  onChangeText={formik.handleChange("latitude")}
-                  onBlur={formik.handleBlur("latitude")}
-                  placeholder="Latitude / అక్షాంశం"
-                  editable={false}
-                />
+                >
+                  <Ionicons
+                    name="location-outline"
+                    size={20}
+                    color="#5f6f94"
+                    style={styles.leftIcon}
+                  />
+                  <TextInput
+                    placeholder="Latitude / అక్షాంశం"
+                    placeholderTextColor="#94a3b8"
+                    style={styles.input}
+                    value={formik.values.latitude}
+                    onChangeText={formik.handleChange("latitude")}
+                    onBlur={formik.handleBlur("latitude")}
+                    editable={false}
+                  />
+                </View>
                 {showErrors && formik.errors.latitude && (
                   <Text style={styles.errorText}>{formik.errors.latitude}</Text>
                 )}
               </View>
 
-              <View style={[styles.inputBlock, styles.halfField]}>
-                <Text style={styles.label}>
-                  Longitude / రేఖాంశం <Text style={styles.requiredStar}>*</Text>
-                </Text>
-                <TextInput
+              <View style={[styles.fieldBlock, styles.halfField]}>
+                <View
                   style={[
-                    styles.input,
+                    styles.inputWrapper,
                     showErrors &&
                       formik.errors.longitude &&
-                      styles.inputError,
+                      styles.inputWrapperError,
                   ]}
-                  value={formik.values.longitude}
-                  onChangeText={formik.handleChange("longitude")}
-                  onBlur={formik.handleBlur("longitude")}
-                  placeholder="Longitude / రేఖాంశం"
-                  editable={false}
-                />
+                >
+                  <Ionicons
+                    name="location-outline"
+                    size={20}
+                    color="#5f6f94"
+                    style={styles.leftIcon}
+                  />
+                  <TextInput
+                    placeholder="Longitude / రేఖాంశం"
+                    placeholderTextColor="#94a3b8"
+                    style={styles.input}
+                    value={formik.values.longitude}
+                    onChangeText={formik.handleChange("longitude")}
+                    onBlur={formik.handleBlur("longitude")}
+                    editable={false}
+                  />
+                </View>
                 {showErrors && formik.errors.longitude && (
                   <Text style={styles.errorText}>{formik.errors.longitude}</Text>
                 )}
@@ -2518,6 +2257,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginLeft: 6,
   },
+
   eshramButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -2653,6 +2393,7 @@ const styles = StyleSheet.create({
   loginButtonHidden: {
     opacity: 0.5,
   },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -2660,6 +2401,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
   },
+
   modalContent: {
     backgroundColor: "#fff",
     borderRadius: 20,
@@ -2675,34 +2417,41 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
   },
+
   modalHeaderContent: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
+
   modalTitle: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#1e3a5f",
   },
+
   modalCloseButton: {
     padding: 4,
   },
+
   modalSubtitle: {
     fontSize: 14,
     color: "#64748b",
     marginBottom: 24,
     textAlign: "center",
   },
+
   modalOtpContainer: {
     marginBottom: 24,
   },
+
   modalSubmitButton: {
     backgroundColor: "#1e3a5f",
     borderRadius: 12,
@@ -2712,13 +2461,38 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: 8,
   },
-  // Make sure these OTP input styles are defined
+
+  submitButtonDisabled: {
+    opacity: 0.7,
+  },
+
+  sendOtpButtonDisabled: {
+    opacity: 0.7,
+  },
+
+  rowFields: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  halfField: {
+    flex: 0.48,
+  },
+
+  picker: {
+    flex: 1,
+    color: "#111827",
+    height: 56,
+  },
+
+  // OTP modal styles
   otpInputsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 16,
     gap: 8,
   },
+
   otpInput: {
     width: 45,
     height: 50,
@@ -2731,39 +2505,90 @@ const styles = StyleSheet.create({
     color: "#1e293b",
     backgroundColor: "#f8fafc",
   },
+
   otpInputError: {
     borderColor: "#ef4444",
     backgroundColor: "#fef2f2",
   },
+
   resendOtpContainer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     marginTop: 8,
   },
+
   resendOtpText: {
     fontSize: 14,
     color: "#64748b",
   },
+
   resendOtpLink: {
     fontSize: 14,
     color: "#1e3a5f",
     fontWeight: "600",
   },
+
   resendOtpDisabled: {
     color: "#94a3b8",
   },
+
   inputBlock: {
     marginBottom: 16,
   },
+
   selectBox: {
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 6,
     backgroundColor: "#fff",
   },
+
   picker: {
-    color: "#000", // Force black text in all modes
+    color: "#000",
   },
 
+  requiredStar: {
+    color: "#ef4444",
+    fontWeight: "bold",
+  },
+
+  inputError: {
+    borderColor: "#ef4444",
+    backgroundColor: "#fff6f6",
+  },
+  inputWrapper: {
+  minHeight: 56,
+  backgroundColor: "#f8fbff",
+  borderRadius: 18,
+  paddingHorizontal: 14,
+  borderWidth: 1,
+  borderColor: "#d7e3ff",
+  flexDirection: "row",
+  alignItems: "center",
+  shadowColor: "#1e3a5f",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.06,
+  shadowRadius: 10,
+  elevation: 2,
+  // Important: Allow the picker to expand
+  paddingRight: 0,
+},
+
+picker: {
+  flex: 1,
+  color: "#111827",
+  height: 56,
+  // Remove default padding/margin that might cause issues
+  paddingHorizontal: 0,
+  marginHorizontal: 0,
+  // For iOS to ensure proper display
+  marginLeft: -8,
+},
+
+leftIcon: {
+  marginRight: 10,
+  // Ensure icon stays at the top of the flex container
+  alignSelf: "center",
+},
 });
