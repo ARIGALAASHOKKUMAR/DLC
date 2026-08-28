@@ -166,6 +166,8 @@ const ProfileUpdate = () => {
   const userData = overalldata[0] || {};
 
   const isCompleted = (key) => {
+    console.log("keee",key);
+    
     if (!key) return false;
 
     const value = userData?.[key];
@@ -286,7 +288,7 @@ const ProfileUpdate = () => {
                               gap: 5,
                             }}
                           >
-                            {completed ? (
+                            {completed ||item.value === "location_information" ?(
                               <Ionicons
                                 name="checkmark-circle"
                                 size={16}

@@ -63,7 +63,7 @@ export const IdentityVerification = ({ userData, onUpdateSuccess }) => {
           }
         },
       ),
-    uploadDocument: Yup.string().required("Required / అవసరం"),
+    // uploadDocument: Yup.string().required("Required / అవసరం"),
     // [conditionalFieldName]: Yup.string().required("Required / అవసరం"),
   });
 

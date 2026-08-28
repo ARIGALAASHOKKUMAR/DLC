@@ -775,7 +775,9 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
     village: Yup.string().required("Required / అవసరం"),
     plotOrHouseNumber: Yup.string().required("Required / అవసరం"),
     landmark: Yup.string().required("Required / అవసరం"),
-    pincode: Yup.string().required("Required / అవసరం"),
+    pincode: Yup.string()
+  .matches(/^[0-9]{6}$/, "Must be exactly 6 digits / సరిగ్గా 6 అంకెలు ఉండాలి")
+  .required("Required / అవసరం"),
     latitude: Yup.string().required("Required / అవసరం"),
     longitude: Yup.string().required("Required / అవసరం"),
   });
