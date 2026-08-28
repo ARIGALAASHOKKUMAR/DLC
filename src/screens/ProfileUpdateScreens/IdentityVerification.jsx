@@ -64,7 +64,7 @@ export const IdentityVerification = ({ userData, onUpdateSuccess }) => {
         },
       ),
     uploadDocument: Yup.string().required("Required / అవసరం"),
-    [conditionalFieldName]: Yup.string().required("Required / అవసరం"),
+    // [conditionalFieldName]: Yup.string().required("Required / అవసరం"),
   });
 
   const formik = useFormik({
@@ -273,9 +273,9 @@ export const IdentityVerification = ({ userData, onUpdateSuccess }) => {
 </View>
 
         <View style={styles.inputBlock}>
-          <Text style={styles.label}>
+          {/* <Text style={styles.label}>
             {conditionalFieldLabel} <Text style={styles.requiredStar}>*</Text>
-          </Text>
+          </Text> */}
           <TextInput
             style={[
               styles.input,
