@@ -1685,7 +1685,7 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderContent}>
                 <Ionicons name="lock-closed" size={24} color="#1e3a5f" />
-                <Text style={styles.modalTitle}>Verify OTP / OTP</Text>
+                <Text style={styles.modalTitle}>Verify OTP</Text>
               </View>
               <TouchableOpacity
                 onPress={handleCloseModal}
@@ -1756,7 +1756,7 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
               ) : (
                 <>
                   <Text style={styles.submitButtonText}>
-                    Verify & Register / నిర్ధారించి నమోదు చేయండి
+                    Verify & Register{"\n"}నిర్ధారించి నమోదు చేయండి
                   </Text>
                   <Ionicons
                     name="checkmark-circle-outline"
