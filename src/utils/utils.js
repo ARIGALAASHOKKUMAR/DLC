@@ -155,9 +155,9 @@ export const EMPLOYEEREGOTP =
 export const EMPLOYEEREG = "/api/open/digital-labour-chowk/register";
 export const BASICPROFILE = "/api/user/digital-labour-chowk/updateBasicInfo";
 export const GETSKILLS = "api/user/digital-labour-chowk/skillInfo";
-export const GETDISTSAPP = "/api/user/v1/districts";
-export const GETMANDALSAPP = "/api/user/v1/mandals?distCode=";
-export const GETVILLAGESAPP = "/api/user/v1/villages";
+export const GETDISTSAPP = "/api/open/v1/districts";
+export const GETMANDALSAPP = "/api/open/v1/mandals?distCode=";
+export const GETVILLAGESAPP = "/api/open/v1/villages";
 export const DIGITALLABOURCHOWKDETAILS ="/api/user/digitalLabourChowkRegDetails";
 export const EMPLOYERJOBPOST ="/api/user/digital-labour-chowk/createJobPosting";
 export const JOBSEARCH = "/api/user/digitalLabourChowkJobPostings/search";

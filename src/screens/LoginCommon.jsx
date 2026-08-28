@@ -22,6 +22,9 @@ import {
   EMPLOYEEREG,
   EMPLOYEEREGOTP,
   GENERATE_CAPTCHA,
+  GETDISTSAPP,
+  GETMANDALSAPP,
+  GETVILLAGESAPP,
   LOGIN_END_POINT,
   LOGOUT_END_POINT,
   myAxios,
@@ -41,6 +44,7 @@ import { ErrorMessage, useFormik } from "formik";
 import * as Yup from "yup";
 import * as LocalAuthentication from "expo-local-authentication";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Picker } from "@react-native-picker/picker";
 
 const { width } = Dimensions.get("window");
 
@@ -1049,6 +1053,11 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
+  
+  // Location state
+  const [dists, setDists] = useState([]);
+  const [mandal, setMandal] = useState([]);
+  const [village, setVillage] = useState([]);
 
   const otpInputs = useRef([]);
   const dispatch = useDispatch();
@@ -1066,6 +1075,15 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
       .required("Confirm password is required"),
     otp: Yup.string().matches(/^[0-9]{6}$/, "6 digits required"),
     agreeTerms: Yup.boolean().oneOf([true], "Required").required("Required"),
+    // Location validation
+    district: Yup.string().required("Required / అవసరం"),
+    mandal: Yup.string().required("Required / అవసరం"),
+    village: Yup.string().required("Required / అవసరం"),
+    plotOrHouseNumber: Yup.string().required("Required / అవసరం"),
+    landmark: Yup.string().required("Required / అవసరం"),
+    pincode: Yup.string().required("Required / అవసరం"),
+    latitude: Yup.string().required("Required / అవసరం"),
+    longitude: Yup.string().required("Required / అవసరం"),
   });
 
   const formik = useFormik({
@@ -1079,15 +1097,124 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
       userType: type,
       agreeTerms: false,
       registrationId: "",
+      // Location fields
+      district: "",
+      mandal: "",
+      village: "",
+      plotOrHouseNumber: "",
+      landmark: "",
+      pincode: "",
+      latitude: "",
+      longitude: "",
     },
     validationSchema,
     onSubmit: handleSubmit,
   });
 
+  // Get districts on component mount
+  const getdists = async () => {
+    const response = await commonAPICall(GETDISTSAPP, {}, "get", dispatch);
+    if (response?.status === 200) {
+      setDists(response?.data?.District_List || []);
+    }
+  };
+
+  const getmandals = async (distcode) => {
+    try {
+      const response = await commonAPICall(
+        GETMANDALSAPP + distcode,
+        {},
+        "get",
+        dispatch,
+      );
+      if (response?.status === 200) {
+        setMandal(response?.data?.Mandal_List || []);
+      } else {
+        setMandal([]);
+      }
+    } catch (error) {
+      console.log("Error fetching mandals:", error);
+      setMandal([]);
+    }
+  };
+
+  const getVillages = async (distcode, mandalcode) => {
+    try {
+      const cleanMandalCode = String(mandalcode || "").replace(/,/g, "");
+
+      const response = await commonAPICall(
+        `${GETVILLAGESAPP}?distCode=${distcode}&mandalCode=${cleanMandalCode}`,
+        {},
+        "get",
+        dispatch,
+      );
+
+      if (response?.status === 200) {
+        setVillage(response?.data?.Village_List || []);
+      } else {
+        setVillage([]);
+      }
+    } catch (error) {
+      console.log("Error fetching villages:", error);
+      setVillage([]);
+    }
+  };
+
+  // Get location on mount
+  const getLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission denied / అనుమతి నిరాకరించబడింది",
+          "Location permission is required / స్థాన అనుమతి అవసరం",
+        );
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      if (!formik.values.latitude) {
+        formik.setFieldValue(
+          "latitude",
+          String(location?.coords?.latitude || ""),
+        );
+      }
+      if (!formik.values.longitude) {
+        formik.setFieldValue(
+          "longitude",
+          String(location?.coords?.longitude || ""),
+        );
+      }
+    } catch (error) {
+      console.log("Location error:", error);
+      Alert.alert(
+        "Error / లోపం",
+        "Unable to fetch location / స్థానాన్ని పొందడం సాధ్యం కాలేదు",
+      );
+    }
+  };
+
+  useEffect(() => {
+    getdists();
+    getLocation();
+  }, []);
+
   async function handleSubmit(values, { setSubmitting, resetForm }) {
     setLoading(true);
     if (!values.otp || values.otp.length !== 6) {
       showErrorToast("Please enter valid 6-digit OTP");
+      setLoading(false);
+      return;
+    }
+
+    // Check location fields
+    if (!values.district || !values.mandal || !values.village) {
+      showErrorToast("Please fill all location details");
+      setLoading(false);
       return;
     }
 
@@ -1106,6 +1233,7 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
       navigation.goBack();
       resetForm();
     }
+    setLoading(false);
   }
 
   const handlePhoneChange = (text) => {
@@ -1154,13 +1282,22 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
 
     const errors = await formik.validateForm();
 
+    // Check all required fields including location
     const hasErrors =
       errors.fullName ||
       errors.email ||
       errors.mobileNumber ||
       errors.password ||
       errors.confirmPassword ||
-      errors.agreeTerms;
+      errors.agreeTerms ||
+      errors.district ||
+      errors.mandal ||
+      errors.village ||
+      errors.plotOrHouseNumber ||
+      errors.landmark ||
+      errors.pincode ||
+      errors.latitude ||
+      errors.longitude;
 
     if (!hasErrors && formik.values.agreeTerms) {
       setOtpLoading(true);
@@ -1184,6 +1321,7 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
           });
         }, 1000);
       }
+      setOtpLoading(false);
     }
   };
 
@@ -1477,6 +1615,260 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
               )}
             </View>
 
+            {/* ===== LOCATION FIELDS ===== */}
+
+            {/* District */}
+            <View style={styles.inputBlock}>
+              <Text style={styles.label}>
+                District / జిల్లా <Text style={styles.requiredStar}>*</Text>
+              </Text>
+              <View
+                style={[
+                  styles.selectBox,
+                  showErrors &&
+                    formik.errors.district &&
+                    styles.inputError,
+                ]}
+              >
+                <Picker
+                  style={styles.picker}
+                  selectedValue={formik.values.district}
+                  onValueChange={(itemValue) => {
+                    formik.setFieldTouched("district", true);
+                    formik.setFieldValue("district", itemValue);
+                    formik.setFieldValue("mandal", "");
+                    formik.setFieldValue("village", "");
+                    setMandal([]);
+                    setVillage([]);
+
+                    if (itemValue) {
+                      getmandals(itemValue);
+                    }
+                  }}
+                >
+                  <Picker.Item
+                    label="---Select District / జిల్లాను ఎంచుకోండి---"
+                    value=""
+                  />
+                  {dists.map((dist) => (
+                    <Picker.Item
+                      key={String(dist.dist_code)}
+                      label={dist.dist_name}
+                      value={String(dist.dist_code)}
+                    />
+                  ))}
+                </Picker>
+              </View>
+              {showErrors && formik.errors.district && (
+                <Text style={styles.errorText}>{formik.errors.district}</Text>
+              )}
+            </View>
+
+            {/* Mandal */}
+            <View style={styles.inputBlock}>
+              <Text style={styles.label}>
+                Mandal / మండలం <Text style={styles.requiredStar}>*</Text>
+              </Text>
+              <View
+                style={[
+                  styles.selectBox,
+                  showErrors &&
+                    formik.errors.mandal &&
+                    styles.inputError,
+                ]}
+              >
+                <Picker
+                  style={styles.picker}
+                  selectedValue={formik.values.mandal}
+                  onValueChange={(itemValue) => {
+                    formik.setFieldTouched("mandal", true);
+                    formik.setFieldValue("mandal", itemValue);
+                    formik.setFieldValue("village", "");
+                    setVillage([]);
+
+                    if (itemValue && formik.values.district) {
+                      getVillages(formik.values.district, itemValue);
+                    }
+                  }}
+                  enabled={!!formik.values.district}
+                >
+                  <Picker.Item
+                    label="---Select Mandal / మండలాన్ని ఎంచుకోండి---"
+                    value=""
+                  />
+                  {mandal.map((item) => (
+                    <Picker.Item
+                      key={String(item.mandal_code)}
+                      label={item.mandal_name}
+                      value={String(item.mandal_code)}
+                    />
+                  ))}
+                </Picker>
+              </View>
+              {showErrors && formik.errors.mandal && (
+                <Text style={styles.errorText}>{formik.errors.mandal}</Text>
+              )}
+            </View>
+
+            {/* Village */}
+            <View style={styles.inputBlock}>
+              <Text style={styles.label}>
+                Village / గ్రామం <Text style={styles.requiredStar}>*</Text>
+              </Text>
+              <View
+                style={[
+                  styles.selectBox,
+                  showErrors &&
+                    formik.errors.village &&
+                    styles.inputError,
+                ]}
+              >
+                <Picker
+                  style={styles.picker}
+                  selectedValue={formik.values.village}
+                  onValueChange={(itemValue) => {
+                    formik.setFieldTouched("village", true);
+                    formik.setFieldValue("village", itemValue);
+                  }}
+                  enabled={!!formik.values.mandal}
+                >
+                  <Picker.Item
+                    label="---Select Village / గ్రామాన్ని ఎంచుకోండి---"
+                    value=""
+                  />
+                  {village.map((item) => (
+                    <Picker.Item
+                      key={String(item.village_code)}
+                      label={item.village_name}
+                      value={String(item.village_code)}
+                    />
+                  ))}
+                </Picker>
+              </View>
+              {showErrors && formik.errors.village && (
+                <Text style={styles.errorText}>{formik.errors.village}</Text>
+              )}
+            </View>
+
+            {/* Door No. */}
+            <View style={styles.inputBlock}>
+              <Text style={styles.label}>
+                Door No. / డోర్ నంబర్ <Text style={styles.requiredStar}>*</Text>
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  showErrors &&
+                    formik.errors.plotOrHouseNumber &&
+                    styles.inputError,
+                ]}
+                value={formik.values.plotOrHouseNumber}
+                onChangeText={formik.handleChange("plotOrHouseNumber")}
+                onBlur={formik.handleBlur("plotOrHouseNumber")}
+                placeholder="Enter Door No. / ద్వారం నంబర్ నమోదు చేయండి"
+                maxLength={20}
+              />
+              {showErrors && formik.errors.plotOrHouseNumber && (
+                <Text style={styles.errorText}>
+                  {formik.errors.plotOrHouseNumber}
+                </Text>
+              )}
+            </View>
+
+            {/* Landmark */}
+            <View style={styles.inputBlock}>
+              <Text style={styles.label}>
+                Land mark / ల్యాండ్ మార్క్ <Text style={styles.requiredStar}>*</Text>
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  showErrors &&
+                    formik.errors.landmark &&
+                    styles.inputError,
+                ]}
+                value={formik.values.landmark}
+                onChangeText={formik.handleChange("landmark")}
+                onBlur={formik.handleBlur("landmark")}
+                placeholder="Enter Landmark / ల్యాండ్మార్క్ నమోదు చేయండి"
+                maxLength={100}
+              />
+              {showErrors && formik.errors.landmark && (
+                <Text style={styles.errorText}>{formik.errors.landmark}</Text>
+              )}
+            </View>
+
+            {/* Pincode */}
+            <View style={styles.inputBlock}>
+              <Text style={styles.label}>
+                Pin Code / పిన్ కోడ్ <Text style={styles.requiredStar}>*</Text>
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  showErrors &&
+                    formik.errors.pincode &&
+                    styles.inputError,
+                ]}
+                value={formik.values.pincode}
+                onChangeText={formik.handleChange("pincode")}
+                onBlur={formik.handleBlur("pincode")}
+                placeholder="Enter Pin Code / పిన్ కోడ్ నమోదు చేయండి"
+                keyboardType="numeric"
+                maxLength={6}
+              />
+              {showErrors && formik.errors.pincode && (
+                <Text style={styles.errorText}>{formik.errors.pincode}</Text>
+              )}
+            </View>
+
+            {/* Latitude & Longitude - Auto fetched */}
+            <View style={styles.rowFields}>
+              <View style={[styles.inputBlock, styles.halfField]}>
+                <Text style={styles.label}>
+                  Latitude / అక్షాంశం <Text style={styles.requiredStar}>*</Text>
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    showErrors &&
+                      formik.errors.latitude &&
+                      styles.inputError,
+                  ]}
+                  value={formik.values.latitude}
+                  onChangeText={formik.handleChange("latitude")}
+                  onBlur={formik.handleBlur("latitude")}
+                  placeholder="Latitude / అక్షాంశం"
+                  editable={false}
+                />
+                {showErrors && formik.errors.latitude && (
+                  <Text style={styles.errorText}>{formik.errors.latitude}</Text>
+                )}
+              </View>
+
+              <View style={[styles.inputBlock, styles.halfField]}>
+                <Text style={styles.label}>
+                  Longitude / రేఖాంశం <Text style={styles.requiredStar}>*</Text>
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    showErrors &&
+                      formik.errors.longitude &&
+                      styles.inputError,
+                  ]}
+                  value={formik.values.longitude}
+                  onChangeText={formik.handleChange("longitude")}
+                  onBlur={formik.handleBlur("longitude")}
+                  placeholder="Longitude / రేఖాంశం"
+                  editable={false}
+                />
+                {showErrors && formik.errors.longitude && (
+                  <Text style={styles.errorText}>{formik.errors.longitude}</Text>
+                )}
+              </View>
+            </View>
+
             {/* Terms */}
             <View style={styles.termsContainer}>
               <TouchableOpacity
@@ -1518,7 +1910,7 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
               )}
             </View>
 
-            {/* OTP */}
+            {/* Send OTP Button */}
             <TouchableOpacity
               style={[
                 styles.sendOtpButton,
@@ -2361,4 +2753,17 @@ const styles = StyleSheet.create({
   resendOtpDisabled: {
     color: "#94a3b8",
   },
+  inputBlock: {
+    marginBottom: 16,
+  },
+  selectBox: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 6,
+    backgroundColor: "#fff",
+  },
+  picker: {
+    color: "#000", // Force black text in all modes
+  },
+
 });
