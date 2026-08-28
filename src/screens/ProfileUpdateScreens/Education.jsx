@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import { styles } from "./styles";
 import ImageBucketRN from "../../utils/ImageBucketRN";
+import { login } from "../../actions";
 
 
 export const Education = ({ userData, onUpdateSuccess }) => {
@@ -107,7 +108,7 @@ export const Education = ({ userData, onUpdateSuccess }) => {
           ...state,
           isProfileUpdated: "Y",
         };
-        // dispatch(login(updatedPayload));
+        dispatch(login(updatedPayload));
         resetForm();
         onUpdateSuccess();
       }

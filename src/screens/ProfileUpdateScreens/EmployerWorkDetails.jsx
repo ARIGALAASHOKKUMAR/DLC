@@ -17,6 +17,7 @@ import * as Yup from "yup";
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import { styles } from "./styles";
+import { login } from "../../actions";
 
 export const EmployerWorkDetails = ({ userData, onUpdateSuccess }) => {
   const state = useSelector((state) => state.LoginReducer);
@@ -126,6 +127,7 @@ export const EmployerWorkDetails = ({ userData, onUpdateSuccess }) => {
         resetForm();
         onUpdateSuccess?.();
         setShowSkillsDropdown(false);
+        dispatch(login(updatedPayload));
       }
     } catch (error) {
       console.log("Error:", error);
