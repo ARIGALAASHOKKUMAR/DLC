@@ -32,9 +32,10 @@ import {
 import { profileMenu } from "../utils/CommonFunctions";
 import ImageBucketRN from "../utils/ImageBucketRN";
 import OldProfileUpdate from "./OldProfileUpdate";
-import { BasicDetails } from "../screens/ProfileUpdateScreens/BasicDetails";
+
+// Import all section components
+import { BasicAndLocationDetails } from "../screens/ProfileUpdateScreens/BasicAndLocationDetails";
 import { IdentityVerification } from "../screens/ProfileUpdateScreens/IdentityVerification";
-import { LocationInformation } from "../screens/ProfileUpdateScreens/LocationInformation";
 import { SkillDetails } from "../screens/ProfileUpdateScreens/SkillDetails";
 import { WorkExperience } from "../screens/ProfileUpdateScreens/WorkExperience";
 import { Education } from "../screens/ProfileUpdateScreens/Education";
@@ -43,23 +44,59 @@ import { EmployerWorkDetails } from "../screens/ProfileUpdateScreens/EmployerWor
 import { Help } from "../screens/ProfileUpdateScreens/Help";
 import { styles } from "../screens/ProfileUpdateScreens/styles";
 
+// Section title mapping for consistent translations
+const SECTION_TITLES = {
+  basic_details: "Basic Details / ప్రాథమిక వివరాలు",
+  identity_verification: "Identity Verification / గుర్తింపు ధృవీకరణ",
+  location_information: "Location Information / స్థాన సమాచారం",
+  skill_details: "Skill Details / నైపుణ్య వివరాలు",
+  work_experience: "Work Experience / పని అనుభవం",
+  education: "Education / విద్య",
+  change_password: "Change Password / పాస్వర్డ్ మార్చండి",
+  work_details: "Work Details / పని వివరాలు",
+  help: "Help / సహాయం",
+};
+
+// Components mapping for each section
+const SECTION_COMPONENTS = {
+  basic_details: BasicAndLocationDetails,
+  identity_verification: IdentityVerification,
+  location_information: BasicAndLocationDetails, // Now handled in BasicAndLocationDetails
+  skill_details: SkillDetails,
+  work_experience: WorkExperience,
+  education: Education,
+  change_password: ChangePassword,
+  work_details: EmployerWorkDetails,
+  help: Help,
+};
+
+// Role-based section filters
+const ROLE_FILTERS = {
+  "DLC Employer": (item) => 
+    !["skill_details", "education", "work_experience"].includes(item.value),
+  "DLC Worker": (item) => 
+    item.value !== "work_details",
+};
+
 const ProfileUpdate = () => {
   const dispatch = useDispatch();
   const navigation = useNavigation();
 
   const state = useSelector((state) => state.LoginReducer);
-  const { isLoggedIn } = state;
+  const { isLoggedIn, roleName, roleId } = state;
 
   const [selectedSection, setSelectedSection] = useState(null);
   const [overalldata, setOveralldata] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Redirect if not logged in
   useEffect(() => {
     if (!isLoggedIn) {
       navigation.replace("Login");
     }
   }, [isLoggedIn, navigation]);
 
+  // Fetch profile details
   const overalldetails = async () => {
     try {
       const res = await commonAPICall(
@@ -77,104 +114,29 @@ const ProfileUpdate = () => {
     }
   };
 
+  // Fetch data only for eligible roles
   useEffect(() => {
-    {(state.roleName == "DLC Employer" || state.roleName === "DLC Worker") && overalldetails()}
-  }, [refreshKey]);
+    if (roleName === "DLC Employer" || roleName === "DLC Worker") {
+      overalldetails();
+    }
+  }, [refreshKey, roleName]);
 
+  // Refresh profile data
   const handleRefreshProfile = () => {
     setRefreshKey((prev) => prev + 1);
   };
 
-  const renderSelectedSection = () => {
-    const userData = overalldata[0] || {};
-
-    switch (selectedSection) {
-      case "basic_details":
-        return (
-          <BasicDetails
-            userData={userData}
-            onUpdateSuccess={handleRefreshProfile}
-          />
-        );
-
-      case "identity_verification":
-        return (
-          <IdentityVerification
-            userData={userData}
-            onUpdateSuccess={handleRefreshProfile}
-          />
-        );
-
-      case "location_information":
-        return (
-          <LocationInformation
-            userData={userData}
-            onUpdateSuccess={handleRefreshProfile}
-          />
-        );
-
-      case "skill_details":
-        return (
-          <SkillDetails
-            userData={userData}
-            onUpdateSuccess={handleRefreshProfile}
-          />
-        );
-
-      case "work_experience":
-        return (
-          <WorkExperience
-            userData={userData}
-            onUpdateSuccess={handleRefreshProfile}
-          />
-        );
-
-      case "education":
-        return (
-          <Education
-            userData={userData}
-            onUpdateSuccess={handleRefreshProfile}
-          />
-        );
-
-      case "change_password":
-        return (
-          <ChangePassword
-            userData={userData}
-            onUpdateSuccess={handleRefreshProfile}
-          />
-        );
-
-      case "work_details":
-        return (
-          <EmployerWorkDetails
-            userData={userData}
-            onUpdateSuccess={handleRefreshProfile}
-          />
-        );
-
-      case "help":
-        return <Help userData={userData} />;
-
-      default:
-        return null;
-    }
-  };
-
-  if (!isLoggedIn) return null;
-
+  // Get user data
   const userData = overalldata[0] || {};
 
+  // Check if a section is completed based on its key
   const isCompleted = (key) => {
-    console.log("keee",key);
-    
     if (!key) return false;
 
     const value = userData?.[key];
 
-    console.log(`Checking completion for `, value);
-
-    if (key === "education" || key === "work_history" || key === "skills") {
+    // Handle array fields (education, work_history, skills)
+    if (["education", "work_history", "skills"].includes(key)) {
       try {
         const parsed = JSON.parse(value || "[]");
         return Array.isArray(parsed) && parsed.length > 0;
@@ -183,162 +145,152 @@ const ProfileUpdate = () => {
       }
     }
 
+    // Handle location info - check if all location fields are filled
+    if (key === "location_info_completed") {
+      return !!(
+        userData?.district &&
+        userData?.mandal &&
+        userData?.village &&
+        userData?.plot_or_house_number &&
+        userData?.landmark &&
+        userData?.pincode &&
+        userData?.latitude &&
+        userData?.longitude
+      );
+    }
+
+    // Basic check for other fields
     return !!value;
   };
 
-  // Helper function to translate section titles
+  // Get translated section title
   const getSectionTitle = (section) => {
     if (!section) return "My Profile / నా ప్రొఫైల్";
+    return SECTION_TITLES[section] || section.replace(/_/g, " ").toUpperCase();
+  };
 
-    const titles = {
-      basic_details: "Basic Details / ప్రాథమిక వివరాలు",
-      identity_verification: "Identity Verification / గుర్తింపు ధృవీకరణ",
-      location_information: "Location Information / స్థాన సమాచారం",
-      skill_details: "Skill Details / నైపుణ్య వివరాలు",
-      work_experience: "Work Experience / పని అనుభవం",
-      education: "Education / విద్య",
-      change_password: "Change Password / పాస్వర్డ్ మార్చండి",
-      work_details: "Work Details / పని వివరాలు",
-      help: "Help / సహాయం",
-    };
+  // Get menu title with translation
+  const getMenuTitle = (item) => {
+    return SECTION_TITLES[item.value] || item.title;
+  };
+
+  // Get filtered menu items based on role
+  const getFilteredMenu = () => {
+    const filter = ROLE_FILTERS[roleName] || (() => true);
+    
+    return profileMenu
+      .filter((item) => {
+        // Apply role-based filter
+        if (!filter(item)) return false;
+        return true;
+      })
+      .sort((a, b) => a.id - b.id);
+  };
+
+  // Render the selected section component
+  const renderSelectedSection = () => {
+    const Component = SECTION_COMPONENTS[selectedSection];
+    if (!Component) return null;
+
+    // For location_information, pass a flag to indicate it's a separate section
+    const isLocationOnly = selectedSection === "location_information";
 
     return (
-      titles[section] ||
-      section.replace(/_/g, " ").toUpperCase() +
-        " / " +
-        section.replace(/_/g, " ").toUpperCase()
+      <Component
+        userData={userData}
+        onUpdateSuccess={handleRefreshProfile}
+        isLocationOnly={isLocationOnly}
+      />
     );
   };
 
+  // Render menu item with completion status
+  const renderMenuItem = (item) => {
+    const completed = isCompleted(item.key);
+    const menuTitle = getMenuTitle(item);
+    const isHelp = item.value === "help";
 
-  
+    return (
+      <TouchableOpacity
+        key={item.id}
+        style={styles.menuItem}
+        onPress={() => setSelectedSection(item.value)}
+        activeOpacity={0.8}
+      >
+        <View style={styles.menuLeft}>
+          <Ionicons
+            name={item.icon}
+            size={22}
+            color="#1e3a5f"
+            style={styles.menuIcon}
+          />
+          <Text style={styles.menuTitle}>{menuTitle}</Text>
+        </View>
+
+        {!isHelp && (
+          <View style={styles.statusContainer}>
+            <Ionicons
+              name={completed ? "checkmark-circle" : "close-circle"}
+              size={16}
+              color={completed ? "green" : "red"}
+            />
+            <Text style={[
+              styles.statusText, 
+              completed ? styles.completedText : styles.notCompletedText
+            ]}>
+              {completed ? "Completed" : "Pending"}
+            </Text>
+          </View>
+        )}
+
+        <Ionicons name="chevron-forward" size={22} color="#1e3a5f" />
+      </TouchableOpacity>
+    );
+  };
+
+  // If not logged in, don't render
+  if (!isLoggedIn) return null;
+
+  // For non-DLC roles, render old profile update
+  if (roleName !== "DLC Employer" && roleName !== "DLC Worker") {
+    return <OldProfileUpdate />;
+  }
+
+  const filteredMenu = getFilteredMenu();
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {(state.roleId === 13 || state.roleName === "DLC Worker") && (
-        <View style={styles.card}>
-          <Text style={styles.header}>
-            {selectedSection
-              ? getSectionTitle(selectedSection)
-              : "My Profile / నా ప్రొఫైల్"}
-          </Text>
+      <View style={styles.card}>
+        <Text style={styles.header}>
+          {selectedSection
+            ? getSectionTitle(selectedSection)
+            : "My Profile / నా ప్రొఫైల్"}
+        </Text>
 
-          <View style={styles.panel}>
-            {!selectedSection ? (
-              <View>
-                {profileMenu
-                  .filter((item) => {
-                    if (state.roleName === "DLC Employer") {
-                      return ![
-                        "skill_details",
-                        "education",
-                        "work_experience",
-                      ].includes(item.value);
-                    } else if (state.roleName === "DLC Worker") {
-                      return item.value !== "work_details";
-                    }
-                    return true;
-                  })
-                  .map((item) => {
-                    const completed = isCompleted(item.key);
-                    console.log("tessss", item);
+        <View style={styles.panel}>
+          {!selectedSection ? (
+            <View>
+              {filteredMenu.map(renderMenuItem)}
+            </View>
+          ) : (
+            <View>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => setSelectedSection(null)}
+              >
+                <Ionicons name="arrow-back" size={20} color="#0d6efd" />
+                <Text style={styles.backButtonText}>
+                  Back to Profile Menu / ప్రొఫైల్ మెనూకి తిరిగి వెళ్ళు
+                </Text>
+              </TouchableOpacity>
 
-                    // Translate menu titles
-                    let menuTitle = item.title;
-                    if (item.value === "basic_details")
-                      menuTitle = "Basic Details / ప్రాథమిక వివరాలు";
-                    else if (item.value === "identity_verification")
-                      menuTitle = "Identity Verification / గుర్తింపు ధృవీకరణ";
-                    else if (item.value === "location_information")
-                      menuTitle = "Location Information / స్థాన సమాచారం";
-                    else if (item.value === "skill_details")
-                      menuTitle = "Skill Details / నైపుణ్య వివరాలు";
-                    else if (item.value === "work_experience")
-                      menuTitle = "Work Experience / పని అనుభవం";
-                    else if (item.value === "education")
-                      menuTitle = "Education / విద్య";
-                    else if (item.value === "change_password")
-                      menuTitle = "Change Password / పాస్వర్డ్ మార్చండి";
-                    else if (item.value === "work_details")
-                      menuTitle = "Work Details / పని వివరాలు";
-                    else if (item.value === "help") menuTitle = "Help / సహాయం";
-
-                    return (
-                      <TouchableOpacity
-                        key={item.id}
-                        style={styles.menuItem}
-                        onPress={() => setSelectedSection(item.value)}
-                        activeOpacity={0.8}
-                      >
-                        <View style={styles.menuLeft}>
-                          <Ionicons
-                            name={item.icon}
-                            size={22}
-                            color="#1e3a5f"
-                            style={styles.menuIcon}
-                          />
-                          <Text style={styles.menuTitle}>{menuTitle}</Text>
-                        </View>
-
-                        {item.value !== "help" && (
-                          <View
-                            style={{
-                              flexDirection: "row",
-                              alignItems: "center",
-                              gap: 5,
-                            }}
-                          >
-                            {completed ||item.value === "location_information" ?(
-                              <Ionicons
-                                name="checkmark-circle"
-                                size={16}
-                                color="green"
-                              />
-                            ) : (
-                              <Ionicons
-                                name="close-circle"
-                                size={16}
-                                color="red"
-                              />
-                            )}
-                            {/* <Text>
-                            {completed ? "Completed / పూర్తయింది" : "Not Completed / పూర్తి కాలేదు"}
-                          </Text> */}
-                          </View>
-                        )}
-
-                        <Ionicons
-                          name="chevron-forward"
-                          size={22}
-                          color="#1e3a5f"
-                        />
-                      </TouchableOpacity>
-                    );
-                  })}
-              </View>
-            ) : (
-              <View>
-                <TouchableOpacity
-                  style={styles.backButton}
-                  onPress={() => setSelectedSection(null)}
-                >
-                  <Ionicons name="arrow-back" size={20} color="#0d6efd" />
-                  <Text style={styles.backButtonText}>
-                    Back to Profile Menu / ప్రొఫైల్ మెనూకి తిరిగి వెళ్ళు
-                  </Text>
-                </TouchableOpacity>
-
-                {renderSelectedSection()}
-              </View>
-            )}
-          </View>
+              {renderSelectedSection()}
+            </View>
+          )}
         </View>
-      )}
-      {state.roleName !== "DLC Employer" && state.roleName !== "DLC Worker" && (
-        <OldProfileUpdate />
-      )}
+      </View>
     </ScrollView>
   );
 };
-export default ProfileUpdate;
 
+export default ProfileUpdate;

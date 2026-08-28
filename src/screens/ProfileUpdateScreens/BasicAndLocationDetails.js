@@ -1,3 +1,7 @@
+// ============================================
+// FILE: src/screens/ProfileUpdateScreens/BasicAndLocationDetails.js
+// ============================================
+
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { BASICPROFILE, commonAPICall, GETDISTSAPP, GETMANDALSAPP, GETVILLAGESAPP } from "../../utils/utils";
@@ -190,6 +194,7 @@ export const BasicAndLocationDetails = ({ userData, onUpdateSuccess }) => {
         accuracy: Location.Accuracy.High,
       });
       
+      // Only set if fields are empty
       if (!formik.values.latitude) {
         formik.setFieldValue("latitude", String(location?.coords?.latitude || ""));
       }
@@ -259,7 +264,7 @@ export const BasicAndLocationDetails = ({ userData, onUpdateSuccess }) => {
       then: (schema) => schema.required("Required / అవసరం"),
       otherwise: (schema) => schema.notRequired(),
     }),
-    email: Yup.string().email("Invalid email / చెల్లని ఇమెయిల్"),
+    email:Yup.string().required("Required / అవసరం"),
 
     // Location Details
     district: Yup.string().required("Required / అవసరం"),
@@ -267,7 +272,9 @@ export const BasicAndLocationDetails = ({ userData, onUpdateSuccess }) => {
     village: Yup.string().required("Required / అవసరం"),
     plotOrHouseNumber: Yup.string().required("Required / అవసరం"),
     landmark: Yup.string().required("Required / అవసరం"),
-    pincode: Yup.string().required("Required / అవసరం"),
+    pincode: Yup.string()
+      .required("Required / అవసరం")
+      .matches(/^[0-9]{6}$/, "Invalid pincode / చెల్లని పిన్కోడ్"),
     latitude: Yup.string().required("Required / అవసరం"),
     longitude: Yup.string().required("Required / అవసరం"),
   });
@@ -297,7 +304,7 @@ export const BasicAndLocationDetails = ({ userData, onUpdateSuccess }) => {
       
       // Common
       userType: state.roleName,
-      stageName: "BASIC_INFO", // or "LOCATION_ADDRESS" based on your flow
+      stageName: "BASIC_INFO",
     },
     validationSchema,
     onSubmit: handleSubmit,
@@ -778,6 +785,7 @@ export const BasicAndLocationDetails = ({ userData, onUpdateSuccess }) => {
               onChangeText={formik.handleChange("latitude")}
               onBlur={formik.handleBlur("latitude")}
               placeholder="Latitude / అక్షాంశం"
+              keyboardType="decimal-pad"
             />
             {formik.errors.latitude && formik.touched.latitude && (
               <Text style={styles.errorText}>{formik.errors.latitude}</Text>
@@ -798,6 +806,7 @@ export const BasicAndLocationDetails = ({ userData, onUpdateSuccess }) => {
               onChangeText={formik.handleChange("longitude")}
               onBlur={formik.handleBlur("longitude")}
               placeholder="Longitude / రేఖాంశం"
+              keyboardType="decimal-pad"
             />
             {formik.errors.longitude && formik.touched.longitude && (
               <Text style={styles.errorText}>{formik.errors.longitude}</Text>

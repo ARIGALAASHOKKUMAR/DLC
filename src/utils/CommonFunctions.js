@@ -508,6 +508,13 @@ export const GetVillagesNew = async (dist, mandal, setVillages) => {
   }
 };
 
+// ============================================
+// FILE: utils/CommonFunctions.js
+// ============================================
+
+// ... (previous code from the combined file)
+
+// ========== PROFILE MENU ==========
 export const profileMenu = [
   {
     id: 1,
@@ -521,51 +528,106 @@ export const profileMenu = [
     title: "Identity & Verification",
     icon: "card-outline",
     value: "identity_verification",
-    key: "verification_status", // ✅ from API
+    key: "verification_status",
   },
+  // {
+  //   id: 3,
+  //   title: "Location Information",
+  //   icon: "location-outline",
+  //   value: "location_information",
+  //   key: "location_info_completed",
+  // },
   {
     id: 3,
-    title: "Location Information",
-    icon: "location-outline",
-    value: "location_information",
-    key: "location_info_completed", // ✅
-  },
-  {
-    id: 4,
     title: "Skill Details",
     icon: "construct-outline",
     value: "skill_details",
-    key: "skill_info_completed", // ✅
+    key: "skill_info_completed",
   },
   {
-    id: 5,
+    id: 4,
     title: "Experience / Work Experience",
     icon: "briefcase-outline",
     value: "work_experience",
-    key: "work_history", // ✅ (check array length)
+    key: "work_history",
   },
   {
-    id: 99,
+    id: 5,
     title: "Work Details",
     icon: "briefcase-outline",
     value: "work_details",
-    key: "employer_work_details_completed", // ✅
+    key: "employer_work_details_completed",
   },
   {
     id: 6,
     title: "Education",
     icon: "school-outline",
     value: "education",
-    key: "education", // ✅ (check parsed array)
+    key: "education",
   },
   {
     id: 7,
     title: "Help",
     icon: "help-circle-outline",
     value: "help",
-    key: null, // no API dependency
+    key: null,
   },
 ];
+
+// ========== SECTION TITLE MAPPING ==========
+export const SECTION_TITLES = {
+  basic_details: "Basic Details / ప్రాథమిక వివరాలు",
+  identity_verification: "Identity Verification / గుర్తింపు ధృవీకరణ",
+  // location_information: "Location Information / స్థాన సమాచారం",
+  skill_details: "Skill Details / నైపుణ్య వివరాలు",
+  work_experience: "Work Experience / పని అనుభవం",
+  education: "Education / విద్య",
+  change_password: "Change Password / పాస్వర్డ్ మార్చండి",
+  work_details: "Work Details / పని వివరాలు",
+  help: "Help / సహాయం",
+};
+
+// ========== ROLE FILTERS ==========
+export const ROLE_FILTERS = {
+  "DLC Employer": (item) => 
+    !["skill_details", "education", "work_experience", "location_information"].includes(item.value),
+  "DLC Worker": (item) => 
+    item.value !== "work_details" && item.value !== "location_information",
+};
+
+// ========== COMPLETION CHECK HELPER ==========
+export const isSectionCompleted = (userData, key) => {
+  if (!key) return false;
+
+  const value = userData?.[key];
+
+  // Handle array fields
+  if (["education", "work_history", "skills"].includes(key)) {
+    try {
+      const parsed = JSON.parse(value || "[]");
+      return Array.isArray(parsed) && parsed.length > 0;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Handle location info - check all required fields
+  if (key === "location_info_completed") {
+    return !!(
+      userData?.district &&
+      userData?.mandal &&
+      userData?.village &&
+      userData?.plot_or_house_number &&
+      userData?.landmark &&
+      userData?.pincode &&
+      userData?.latitude &&
+      userData?.longitude
+    );
+  }
+
+  // Basic check
+  return !!value;
+};
 
 
 export const dists28 =  [
