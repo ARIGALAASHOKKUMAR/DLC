@@ -251,17 +251,22 @@ const getLogin = async () => {
       // Welcome message
       const currentTime = new Date().getHours();
       let welcomeMsg = "";
+if (currentTime >= 5 && currentTime < 12) {
 
-      if (currentTime >= 5 && currentTime < 12) {
-        welcomeMsg =
-          "Good morning! A book is a window to the world—start your day with knowledge!";
-      } else if (currentTime >= 12 && currentTime < 18) {
-        welcomeMsg =
-          "Good afternoon! Dive into a book and let your imagination take you on an adventure!";
-      } else {
-        welcomeMsg =
-          "Good evening! End your day with the wisdom of a good book!";
-      }
+  welcomeMsg =
+    "శుభోదయం! మీ నైపుణ్యాలు మరియు అవకాశాలను కలుపుతూ ఈ రోజును విజయవంతంగా ప్రారంభించండి!";
+
+} else if (currentTime >= 12 && currentTime < 18) {
+
+  welcomeMsg =
+    "శుభ మధ్యాహ్నం! మీకు సరైన నైపుణ్యాలు, ఉద్యోగాలు మరియు ఉపాధి అవకాశాలను అన్వేషించండి!";
+
+} else {
+
+  welcomeMsg =
+    "శుభ సాయంత్రం! మీ అవసరాలకు సరైన అవకాశాలను కనుగొంటూ మీ రోజును విజయవంతంగా ముగించండి!";
+
+}
 
       showNativeMessage(welcomeMsg, "SUCCESS");
 
