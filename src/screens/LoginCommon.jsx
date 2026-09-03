@@ -29,6 +29,7 @@ import {
   LOGOUT_END_POINT,
   myAxios,
   myAxiosLogin,
+  showNativeMessage,
 } from "../utils/utils";
 import { useDispatch } from "react-redux";
 import { login } from "../actions";
@@ -197,107 +198,125 @@ const LoginCommon = ({ navigation }) => {
   useEffect(() => {
     logoutUser();
   }, []);
+const getLogin = async () => {
+  if (!validateForm()) return;
 
-  const getLogin = async () => {
-    if (!validateForm()) return;
+  setLoading(true);
 
-    setLoading(true);
+  const captchaText = deptCaptcha.trim() || currentCaptcha.text;
+  const captchaId = storedCaptchaId || currentCaptcha.id;
 
-    const captchaText = deptCaptcha.trim() || currentCaptcha.text;
-    const captchaId = storedCaptchaId || currentCaptcha.id;
-
-    const values = {
-      username: username.trim(),
-      password: encodeBase64(password),
-      deptCaptcha: captchaText,
-      storedCaptchaId: captchaId,
-      latitude: null,
-      longitude: null,
-      loginSource: "mobile",
-    };
-
-    try {
-      const response = await myAxiosLogin.post(LOGIN_END_POINT, values);
-
-      if (response.status === 200) {
-        const payload = {
-          isLoggedIn: true,
-          isDefaultPassword: response.data.isDefaultPassword,
-          isProfileUpdated: response.data.isProfileUpdated,
-          officerName: response.data.officerName,
-          mobile: response.data.mobile,
-          parents: response.data.parents,
-          services: response.data.services,
-          roleId: response.data.roleId,
-          userId: response.data.userId,
-          username: response.data.username,
-          token: response.data.token,
-          roleName: response.data.roleName,
-          photoPath: response.data.photoPath,
-          lastLoginTime: response.data.lastLoginTime,
-          uuid: response.data.uuid,
-          lastLogoutTime: response.data.lastLogoutTime,
-          lastFailureAttemptTime: response.data.lastFailureAttemptTime,
-          passwordSinceUpdated: response.data.passwordSinceUpdated,
-          latitude: response.data.latitude,
-          longitude: response.data.longitude,
-          loginLocation: response.data.location,
-        };
-
-        dispatch(login(payload));
-
-        const currentTime = new Date().getHours();
-        let welcomeMsg = "";
-
-        if (currentTime >= 5 && currentTime < 12) {
-          welcomeMsg =
-            "Good morning! A book is a window to the world—start your day with knowledge!";
-        } else if (currentTime >= 12 && currentTime < 18) {
-          welcomeMsg =
-            "Good afternoon! Dive into a book and let your imagination take you on an adventure!";
-        } else {
-          welcomeMsg =
-            "Good evening! End your day with the wisdom of a good book!";
-        }
-
-        showSuccessToast(welcomeMsg);
-
-        if (
-          parseInt(response?.data?.passwordSinceUpdated) >= 85 &&
-          parseInt(response?.data?.passwordSinceUpdated) < 90
-        ) {
-          showInfoToast(
-            `Your password will expire in ${
-              90 - response.data.passwordSinceUpdated
-            } days. Please update it soon.`
-          );
-        }
-
-        navigation.navigate("HOME");
-      } else {
-        showErrorToast("Please enter valid credentials");
-      }
-    } catch (error) {
-      if (error.response) {
-        if (error.response?.data?.message?.toLowerCase().includes("captcha")) {
-          await generateFreshCaptcha();
-          showErrorToast("Captcha expired. Please try again.");
-        } else {
-          setCaptchaImage(error.response?.data?.captcha || "");
-          setStoredCaptchaId(error.response?.data?.captchaId || "");
-          showErrorToast(
-            error.response?.data?.message || "Please enter valid credentials"
-          );
-        }
-      } else {
-        showErrorToast(error.message || "Something went wrong");
-      }
-
-      console.log("Error during authentication:", error);
-    } finally {
-      setLoading(false);
-    }
+  const values = {
+    username: username.trim(),
+    password: encodeBase64(password),
+    deptCaptcha: captchaText,
+    storedCaptchaId: captchaId,
+    latitude: null,
+    longitude: null,
+    loginSource: "mobile",
   };
+
+  try {
+    const response = await myAxiosLogin.post(LOGIN_END_POINT, values);
+
+    if (response.status === 200) {
+      const data = response.data;
+
+      const payload = {
+        isLoggedIn: true,
+        isDefaultPassword: data.isDefaultPassword,
+        isProfileUpdated: data.isProfileUpdated,
+        officerName: data.officerName,
+        mobile: data.mobile,
+        parents: data.parents,
+        services: data.services,
+        roleId: data.roleId,
+        userId: data.userId,
+        username: data.username,
+        token: data.token,
+        roleName: data.roleName,
+        photoPath: data.photoPath,
+        lastLoginTime: data.lastLoginTime,
+        uuid: data.uuid,
+        lastLogoutTime: data.lastLogoutTime,
+        lastFailureAttemptTime: data.lastFailureAttemptTime,
+        passwordSinceUpdated: data.passwordSinceUpdated,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        loginLocation: data.location,
+      };
+
+      dispatch(login(payload));
+
+      // Welcome message
+      const currentTime = new Date().getHours();
+      let welcomeMsg = "";
+
+      if (currentTime >= 5 && currentTime < 12) {
+        welcomeMsg =
+          "Good morning! A book is a window to the world—start your day with knowledge!";
+      } else if (currentTime >= 12 && currentTime < 18) {
+        welcomeMsg =
+          "Good afternoon! Dive into a book and let your imagination take you on an adventure!";
+      } else {
+        welcomeMsg =
+          "Good evening! End your day with the wisdom of a good book!";
+      }
+
+      showNativeMessage(welcomeMsg, "SUCCESS");
+
+      // Password expiry warning
+      const passwordDays = parseInt(data.passwordSinceUpdated, 10);
+
+      if (passwordDays >= 85 && passwordDays < 90) {
+        showNativeMessage(
+          `Your password will expire in ${
+            90 - passwordDays
+          } days. Please update it soon.`,
+          "WARNING"
+        );
+      }
+
+      navigation.navigate("HOME");
+    } else {
+      showNativeMessage("Please enter valid credentials", "FAILURE");
+    }
+  } catch (error) {
+    if (error.response) {
+      const errorData = error.response.data;
+
+      // Captcha error
+      if (
+        errorData?.message
+          ?.toLowerCase()
+          .includes("captcha")
+      ) {
+        await generateFreshCaptcha();
+
+        showNativeMessage(
+          "Captcha expired. Please try again.",
+          "FAILURE"
+        );
+      } else {
+        // Update captcha if returned by backend
+        setCaptchaImage(errorData?.captcha || "");
+        setStoredCaptchaId(errorData?.captchaId || "");
+
+        showNativeMessage(
+          errorData?.message || "Please enter valid credentials",
+          "FAILURE"
+        );
+      }
+    } else {
+      showNativeMessage(
+        error?.message || "Something went wrong",
+        "FAILURE"
+      );
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleRegister = () => {
     if (selectedUserType === "worker") {
@@ -778,8 +797,8 @@ const CommonRegistrationForm = ({ navigation, type = "worker" }) => {
     pincode: Yup.string()
   .matches(/^[0-9]{6}$/, "Must be exactly 6 digits / సరిగ్గా 6 అంకెలు ఉండాలి")
   .required("Required / అవసరం"),
-    latitude: Yup.string().required("Required / అవసరం"),
-    longitude: Yup.string().required("Required / అవసరం"),
+    // latitude: Yup.string().required("Required / అవసరం"),
+    // longitude: Yup.string().required("Required / అవసరం"),
   });
 
   const formik = useFormik({

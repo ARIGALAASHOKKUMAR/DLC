@@ -115,7 +115,7 @@ export const commonAPICall = async (url, values, get_post, dispatch) => {
   // Show message if needed
   if ((msg || "").trim() !== "") {
     dispatch(showMessage(msg + " [" + getCurrentTimestamp() + "]", msgType));
-    ToastFunc(msg, msgType);
+    showNativeMessage(msg, msgType);
   }
 
   // ALWAYS hide loader before returning
@@ -124,17 +124,25 @@ export const commonAPICall = async (url, values, get_post, dispatch) => {
   return { data, status: responseStatus };
 };
 
-const showNativeMessage = (msg, type) => {
-  if (type?.toUpperCase() === "SUCCESS") {
-    Alert.alert("Success", msg);
-    return;
-  } else if (type?.toUpperCase() === "FAILURE") {
-    Alert.alert("Error", msg);
-    return;
-  } else {
-    Alert.alert("Info", msg);
+export const showNativeMessage = (msg, type) => {
+  const messageType = type?.toUpperCase();
+
+  if (messageType === "SUCCESS") {
+    Alert.alert("✅ Success", msg);
     return;
   }
+
+  if (messageType === "FAILURE") {
+    Alert.alert("❌ Error", msg);
+    return;
+  }
+
+  if (messageType === "WARNING") {
+    Alert.alert("⚠️ Warning", msg);
+    return;
+  }
+
+  Alert.alert("ℹ️ Info", msg);
 };
 
 export const CONTEXT_NAME = "Digital Labour Chowk";
