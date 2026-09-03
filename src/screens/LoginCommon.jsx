@@ -358,7 +358,7 @@ const LoginCommon = ({ navigation }) => {
         </View>
         <Ionicons name="chevron-forward" size={22} color="#1e3a5f" />
       </TouchableOpacity>
-      <TouchableOpacity
+      {/* <TouchableOpacity
         style={styles.optionCard}
         onPress={() => setSelectedUserType("agency")}
         activeOpacity={0.85}
@@ -372,7 +372,7 @@ const LoginCommon = ({ navigation }) => {
           </Text>
         </View>
         <Ionicons name="chevron-forward" size={22} color="#1e3a5f" />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       <TouchableOpacity
         style={[
