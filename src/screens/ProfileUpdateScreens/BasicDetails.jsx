@@ -259,7 +259,7 @@ export const BasicAndLocationDetails = ({ userData, onUpdateSuccess }) => {
       then: (schema) => schema.required("Required / అవసరం"),
       otherwise: (schema) => schema.notRequired(),
     }),
-    email: Yup.string().email("Invalid email / చెల్లని ఇమెయిల్"),
+    email: Yup.string().required("Required / అవసరం"),
 
     // Location Details
     district: Yup.string().required("Required / అవసరం"),
