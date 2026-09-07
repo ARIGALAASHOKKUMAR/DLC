@@ -181,7 +181,17 @@ const PostJob = ({ route, navigation }) => {
     jobTitle: Yup.string().required("Required"),
     jobCategory: Yup.array().min(1, "Select at least one category"),
     startDate: Yup.string().required("Required"),
-    endDate: Yup.string().required("Required"),
+    endDate: Yup.string()
+      .required("Required")
+      .test(
+        "is-greater-than-start",
+        "End date must be greater than or equal to start date",
+        function(value) {
+          const { startDate } = this.parent;
+          if (!startDate || !value) return true;
+          return new Date(value) >= new Date(startDate);
+        }
+      ),
     workDuration: Yup.string().required("Required"),
     district: Yup.string().required("Required"),
     mandal: Yup.string().required("Required"),
@@ -430,6 +440,10 @@ const PostJob = ({ route, navigation }) => {
                     "startDate",
                     formatDateToApi(selectedDate),
                   );
+                  // Clear end date error when start date changes
+                  if (formik.values.endDate) {
+                    formik.validateField("endDate");
+                  }
                 }
               }}
             />
